@@ -1,0 +1,64 @@
+name: aniwhere
+description: "Watch and read anime, manga, anywhere."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  
+  # Navigation
+  go_router: ^14.8.1
+  
+  # Local Database
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  
+  # Networking
+  dio: ^5.7.0
+  
+  # UI
+  cached_network_image: ^3.4.1
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  
+  # Video Player
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_video: ^1.0.5
+  
+  # JavaScript Engine for extensions
+  flutter_js: ^0.8.3
+  
+  # Auth
+  flutter_web_auth_2: ^4.0.3
+  
+  # Storage & Files
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.5
+  file_picker: ^8.1.7
+  
+  # Permissions & Utils
+  permission_handler: ^11.3.1
+  url_launcher: ^6.3.1
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  isar_generator: ^3.1.0+1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/icons/
+    - assets/fonts/
