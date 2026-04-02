@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../data/sources/source.dart';
+import '../../data/sources/source_registry.dart';
+import 'source_browse_screen.dart';
 
 /// Browse screen for discovering new manga/anime from sources
 class BrowseScreen extends ConsumerWidget {
@@ -9,153 +14,194 @@ class BrowseScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Browse'),
+    final allSources = ref.watch(allSourcesProvider);
+    final mangaSources = ref.watch(mangaSourcesProvider);
+    final animeSources = ref.watch(animeSourcesProvider);
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Browse'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.extension),
+              onPressed: () {
+                // Navigate to extension manager
+                _showExtensionInfo(context);
+              },
+              tooltip: 'Extensions',
+            ),
+          ],
+          bottom: const TabBar(
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.primary,
+            tabs: [
+              Tab(text: 'All'),
+              Tab(text: 'Manga'),
+              Tab(text: 'Anime'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _SourceList(sources: allSources),
+            _SourceList(sources: mangaSources),
+            _SourceList(sources: animeSources),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showExtensionInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Extensions'),
+        content: const Text(
+          'Custom JavaScript extensions will be available in a future update.\n\n'
+          'For now, enjoy the built-in MangaDex and Gogoanime sources!',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.extension),
-            onPressed: () {
-              // Navigate to extension manager
-            },
-            tooltip: 'Extensions',
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),
-      body: const _BrowseBody(),
     );
   }
 }
 
-class _BrowseBody extends StatelessWidget {
-  const _BrowseBody();
+/// List of available sources
+class _SourceList extends StatelessWidget {
+  final List<Source> sources;
+
+  const _SourceList({required this.sources});
 
   @override
   Widget build(BuildContext context) {
-    // Placeholder for Phase 2 implementation
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary.withOpacity(0.1),
+    if (sources.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.extension_off,
+              size: 64,
+              color: AppColors.primary.withValues(alpha: 0.5),
             ),
-            child: const Icon(
-              Icons.explore,
-              size: 60,
-              color: AppColors.primary,
+            const SizedBox(height: 16),
+            Text(
+              'No sources available',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Browse Sources',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming in Phase 2',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondaryDark,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'MangaDex, Gogoanime, and custom extensions',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          // Preview of what sources will look like
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _SourcePreviewItem(
-                    name: 'MangaDex',
-                    language: 'Multi',
-                    icon: Icons.menu_book,
-                    color: AppColors.manga,
-                  ),
-                  const Divider(),
-                  _SourcePreviewItem(
-                    name: 'Gogoanime',
-                    language: 'EN',
-                    icon: Icons.play_circle,
-                    color: AppColors.anime,
-                  ),
-                  const Divider(),
-                  _SourcePreviewItem(
-                    name: 'Custom Extension',
-                    language: 'Multi',
-                    icon: Icons.extension,
-                    color: AppColors.accent,
-                  ),
-                ],
+            const SizedBox(height: 8),
+            Text(
+              'Add extensions to browse content',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondaryDark,
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: sources.length,
+      itemBuilder: (context, index) {
+        final source = sources[index];
+        return _SourceTile(source: source);
+      },
     );
   }
 }
 
-class _SourcePreviewItem extends StatelessWidget {
-  final String name;
-  final String language;
-  final IconData icon;
-  final Color color;
+/// Individual source tile
+class _SourceTile extends StatelessWidget {
+  final Source source;
 
-  const _SourcePreviewItem({
-    required this.name,
-    required this.language,
-    required this.icon,
-    required this.color,
-  });
+  const _SourceTile({required this.source});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: color.withOpacity(0.2),
-            ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.titleSmall,
+    return ListTile(
+      leading: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: _getSourceColor().withValues(alpha: 0.2),
+        ),
+        child: source.iconUrl != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: source.iconUrl!,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => _buildIcon(),
                 ),
-                Text(
-                  language,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.chevron_right,
-            color: AppColors.textTertiaryDark,
-          ),
-        ],
+              )
+            : _buildIcon(),
       ),
+      title: Text(source.name),
+      subtitle: Text(
+        '${source.language.toUpperCase()} • ${_getContentTypeLabel()}',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SourceBrowseScreen(source: source),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildIcon() {
+    return Icon(
+      _getSourceIcon(),
+      color: _getSourceColor(),
+      size: 24,
+    );
+  }
+
+  IconData _getSourceIcon() {
+    switch (source.contentType) {
+      case SourceContentType.manga:
+        return Icons.menu_book;
+      case SourceContentType.anime:
+        return Icons.play_circle;
+      case SourceContentType.novel:
+        return Icons.auto_stories;
+    }
+  }
+
+  Color _getSourceColor() {
+    switch (source.contentType) {
+      case SourceContentType.manga:
+        return AppColors.manga;
+      case SourceContentType.anime:
+        return AppColors.anime;
+      case SourceContentType.novel:
+        return AppColors.novel;
+    }
+  }
+
+  String _getContentTypeLabel() {
+    switch (source.contentType) {
+      case SourceContentType.manga:
+        return 'Manga';
+      case SourceContentType.anime:
+        return 'Anime';
+      case SourceContentType.novel:
+        return 'Novel';
+    }
   }
 }
