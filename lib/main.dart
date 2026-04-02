@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' as material show ThemeMode;
 import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit/media_kit.dart';
+// import 'package:media_kit/media_kit.dart'; // Uncomment when media_kit is enabled
 
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -12,8 +12,8 @@ import 'data/models/app_settings.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize media_kit for video playback
-  MediaKit.ensureInitialized();
+  // Initialize media_kit for video playback (uncomment when enabled)
+  // MediaKit.ensureInitialized();
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
