@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/sources/source.dart';
 import '../../data/models/library_entry.dart';
-import '../../data/repositories/library_repository.dart';
 import '../../core/utils/providers.dart';
 
 /// Provider for media details
@@ -306,6 +305,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       final repo = ref.read(libraryRepositoryProvider);
       await repo.deleteBySourceId('${widget.source.id}:${media.id}');
       setState(() => _isInLibrary = false);
+      ref.invalidate(libraryEntriesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Removed from library')),
@@ -315,6 +315,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       // Add to library
       final entry = LibraryEntry()
         ..sourceId = '${widget.source.id}:${media.id}'
+        ..mediaId = media.id
         ..sourceName = widget.source.id
         ..title = media.title
         ..coverUrl = media.coverUrl
@@ -323,11 +324,15 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
         ..artists = media.artist != null ? [media.artist!] : []
         ..genres = media.genres
         ..publicationStatus = _mapStatus(media.status)
-        ..mediaType = _mapContentType(widget.source.contentType);
+        ..mediaType = _mapContentType(widget.source.contentType)
+        ..status = widget.source.contentType == SourceContentType.anime 
+            ? MediaStatus.planToWatch 
+            : MediaStatus.planToRead;
 
       final repo = ref.read(libraryRepositoryProvider);
       await repo.saveEntry(entry);
       setState(() => _isInLibrary = true);
+      ref.invalidate(libraryEntriesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Added to library')),

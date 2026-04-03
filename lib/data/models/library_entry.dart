@@ -7,9 +7,13 @@ part 'library_entry.g.dart';
 class LibraryEntry {
   Id id = Isar.autoIncrement;
 
-  /// Unique identifier from source (e.g., MangaDex ID)
+  /// Unique identifier combining source and media ID
   @Index(unique: true, replace: true)
   late String sourceId;
+
+  /// The media ID from the source
+  @Index()
+  late String mediaId;
 
   /// Name of the source (e.g., 'mangadex', 'gogoanime')
   @Index()
@@ -34,7 +38,7 @@ class LibraryEntry {
 
   /// Current reading/watching status
   @Enumerated(EnumType.name)
-  MediaStatus status = MediaStatus.planToConsume;
+  MediaStatus status = MediaStatus.planToRead;
 
   /// User's personal rating (0-10)
   double? rating;
@@ -108,7 +112,8 @@ enum MediaStatus {
   completed,
   onHold,
   dropped,
-  planToConsume,
+  planToRead,
+  planToWatch,
 }
 
 /// Publication status from source

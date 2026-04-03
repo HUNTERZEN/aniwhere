@@ -28,6 +28,11 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository();
 });
 
+/// Provides the category repository
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  return CategoryRepository();
+});
+
 // ============================================================================
 // Library Providers
 // ============================================================================
@@ -149,3 +154,22 @@ final librarySortModeProvider = StateProvider<LibrarySortMode>((ref) {
     error: (_, __) => LibrarySortMode.alphabetical,
   );
 });
+
+// ============================================================================
+// Category Providers
+// ============================================================================
+
+/// Provides all categories as a stream
+final categoriesProvider = StreamProvider<List<LibraryCategory>>((ref) {
+  final repository = ref.watch(categoryRepositoryProvider);
+  return repository.watchAll();
+});
+
+/// Provides a single category by ID
+final categoryByIdProvider = FutureProvider.family<LibraryCategory?, int>((ref, id) async {
+  final repository = ref.watch(categoryRepositoryProvider);
+  return repository.getCategoryById(id);
+});
+
+/// Current selected category for filtering
+final selectedCategoryProvider = StateProvider<String?>((ref) => null);

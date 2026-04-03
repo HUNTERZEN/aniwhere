@@ -42,6 +42,13 @@ class LibraryRepository {
     return isar.writeTxn(() => isar.libraryEntrys.put(entry));
   }
 
+  /// Update an existing library entry
+  Future<int> updateEntry(LibraryEntry entry) async {
+    final isar = await DatabaseService.instance;
+    entry.lastUpdated = DateTime.now();
+    return isar.writeTxn(() => isar.libraryEntrys.put(entry));
+  }
+
   /// Delete a library entry
   Future<bool> deleteEntry(int id) async {
     final isar = await DatabaseService.instance;

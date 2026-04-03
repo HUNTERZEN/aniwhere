@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/library_entry.dart';
 import '../models/chapter.dart';
 import '../models/app_settings.dart';
+import '../models/category.dart';
 
 /// Database service for managing Isar database instance
 class DatabaseService {
@@ -27,6 +28,7 @@ class DatabaseService {
         LibraryEntrySchema,
         ChapterSchema,
         AppSettingsSchema,
+        LibraryCategorySchema,
       ],
       directory: dir.path,
       name: 'aniwhere',
@@ -38,6 +40,17 @@ class DatabaseService {
     if (settings == null) {
       await _isar!.writeTxn(() async {
         await _isar!.appSettings.put(AppSettings());
+      });
+    }
+    
+    // Ensure default category exists
+    final defaultCat = await _isar!.libraryCategorys.filter().isDefaultEqualTo(true).findFirst();
+    if (defaultCat == null) {
+      await _isar!.writeTxn(() async {
+        await _isar!.libraryCategorys.put(LibraryCategory()
+          ..name = 'Default'
+          ..isDefault = true
+          ..sortOrder = 0);
       });
     }
 
