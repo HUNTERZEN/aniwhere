@@ -9,6 +9,7 @@ import '../../data/sources/source.dart';
 import '../../data/models/library_entry.dart';
 import '../../core/utils/providers.dart';
 import '../reader/reader_providers.dart';
+import '../player/player_providers.dart';
 
 /// Provider for media details
 final mediaDetailsProvider = FutureProvider.family<SourceMedia, (Source, String)>(
@@ -501,9 +502,17 @@ class _ChapterTile extends StatelessWidget {
 
   void _openContent(BuildContext context) {
     if (source.contentType == SourceContentType.anime) {
-      // TODO: Navigate to player in Phase 5
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video player coming in Phase 5')),
+      // Navigate to the player with full episode context
+      final params = PlayerParams(
+        source: source,
+        mediaId: mediaId,
+        episodeId: chapter.id,
+        episodes: chapters,
+        initialEpisodeIndex: chapterIndex,
+      );
+      context.push(
+        AppRouter.player.replaceFirst(':id', chapter.id),
+        extra: params,
       );
     } else {
       // Navigate to the reader with full chapter context

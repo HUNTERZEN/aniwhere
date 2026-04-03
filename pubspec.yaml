@@ -29,10 +29,9 @@ dependencies:
   google_fonts: ^6.2.1
   
   # Video Player (requires libmpv on Linux: sudo pacman -S mpv)
-  # Uncomment when ready to use video player
-  # media_kit: ^1.1.11
-  # media_kit_video: ^1.2.5
-  # media_kit_libs_video: ^1.0.5
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_video: ^1.0.5
   
   # JavaScript Engine for extensions
   flutter_js: ^0.8.3

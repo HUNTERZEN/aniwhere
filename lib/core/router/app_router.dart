@@ -5,6 +5,8 @@ import '../../features/library/library_screen.dart';
 import '../../features/browse/browse_screen.dart';
 import '../../features/reader/reader_screen.dart';
 import '../../features/reader/reader_providers.dart';
+import '../../features/player/player_screen.dart';
+import '../../features/player/player_providers.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../ui/screens/home_screen.dart';
@@ -91,12 +93,13 @@ class AppRouter {
         name: 'player',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          // TODO: Implement PlayerScreen in Phase 5
-          return Scaffold(
-            appBar: AppBar(title: Text('Player: $id')),
-            body: const Center(child: Text('Player coming in Phase 5')),
-          );
+          final params = state.extra as PlayerParams?;
+          if (params == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: No player params provided')),
+            );
+          }
+          return PlayerScreen(params: params);
         },
       ),
       GoRoute(
