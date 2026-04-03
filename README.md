@@ -57,7 +57,7 @@
 ## 📥 Installation
 
 ### Android
-Download the latest APK from the [Releases](https://github.com/yourusername/aniwhere/releases) page.
+Download the latest APK from the [Releases](https://github.com/HUNTERZEN/aniwhere/releases) page.
 
 ### iOS
 *Coming soon* — TestFlight beta available for early testers.
