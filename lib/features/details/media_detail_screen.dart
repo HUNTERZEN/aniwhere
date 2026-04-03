@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/router/app_router.dart';
 import '../../data/sources/source.dart';
 import '../../data/models/library_entry.dart';
 import '../../core/utils/providers.dart';
+import '../reader/reader_providers.dart';
 
 /// Provider for media details
 final mediaDetailsProvider = FutureProvider.family<SourceMedia, (Source, String)>(
@@ -206,6 +209,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                   chapter: chapters[index],
                   source: widget.source,
                   mediaId: widget.mediaId,
+                  chapters: chapters,
+                  chapterIndex: index,
                 ),
                 childCount: chapters.length,
               ),
@@ -452,11 +457,15 @@ class _ChapterTile extends StatelessWidget {
   final SourceChapter chapter;
   final Source source;
   final String mediaId;
+  final List<SourceChapter> chapters;
+  final int chapterIndex;
 
   const _ChapterTile({
     required this.chapter,
     required this.source,
     required this.mediaId,
+    required this.chapters,
+    required this.chapterIndex,
   });
 
   @override
@@ -485,7 +494,6 @@ class _ChapterTile extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        // Open reader or player
         _openContent(context);
       },
     );
@@ -498,9 +506,17 @@ class _ChapterTile extends StatelessWidget {
         const SnackBar(content: Text('Video player coming in Phase 5')),
       );
     } else {
-      // TODO: Navigate to reader in Phase 4
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reader coming in Phase 4')),
+      // Navigate to the reader with full chapter context
+      final params = ReaderParams(
+        source: source,
+        mediaId: mediaId,
+        chapterId: chapter.id,
+        chapters: chapters,
+        initialChapterIndex: chapterIndex,
+      );
+      context.push(
+        AppRouter.reader.replaceFirst(':id', chapter.id),
+        extra: params,
       );
     }
   }

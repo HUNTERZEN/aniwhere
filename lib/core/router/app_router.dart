@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/library/library_screen.dart';
 import '../../features/browse/browse_screen.dart';
+import '../../features/reader/reader_screen.dart';
+import '../../features/reader/reader_providers.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../ui/screens/home_screen.dart';
@@ -74,12 +76,14 @@ class AppRouter {
         name: 'reader',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          // TODO: Implement ReaderScreen in Phase 4
-          return Scaffold(
-            appBar: AppBar(title: Text('Reader: $id')),
-            body: const Center(child: Text('Reader coming in Phase 4')),
-          );
+          // ReaderParams must be passed via state.extra
+          final params = state.extra as ReaderParams?;
+          if (params == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: No reader params provided')),
+            );
+          }
+          return ReaderScreen(params: params);
         },
       ),
       GoRoute(

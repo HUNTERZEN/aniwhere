@@ -33,6 +33,11 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository();
 });
 
+/// Provides the chapter repository
+final chapterRepositoryProvider = Provider<ChapterRepository>((ref) {
+  return ChapterRepository();
+});
+
 // ============================================================================
 // Library Providers
 // ============================================================================
