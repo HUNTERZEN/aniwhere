@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/yourusername/aniwhere/releases">
+  <a href="https://github.com/HUNTERZEN/aniwhere/releases">
     <img src="https://img.shields.io/github/v/release/yourusername/aniwhere?style=flat-square" alt="Release">
   </a>
   <a href="https://github.com/yourusername/aniwhere/blob/main/LICENSE">
