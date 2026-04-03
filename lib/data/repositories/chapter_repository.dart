@@ -3,8 +3,14 @@ import 'package:isar/isar.dart';
 import '../models/chapter.dart';
 import '../sources/database_service.dart';
 
+typedef TrackerSyncCallback = Future<void> Function(String entrySourceId, int progress, bool isConsumed);
+
 /// Repository for managing chapter reading progress in Isar
 class ChapterRepository {
+  final TrackerSyncCallback? onSync;
+
+  ChapterRepository({this.onSync});
+
   /// Get a specific chapter's stored data
   Future<Chapter?> getChapter(String entrySourceId, String chapterId) async {
     final isar = await DatabaseService.instance;
@@ -52,6 +58,12 @@ class ChapterRepository {
 
       await isar.chapters.put(chapter);
     });
+
+    if (onSync != null) {
+      // Calculate total number of read chapters for this entry to report progress
+      final totalRead = await getReadChapters(entrySourceId).then((list) => list.length);
+      onSync!(entrySourceId, totalRead, currentPage >= totalPages - 1);
+    }
   }
 
   /// Mark a chapter as read/consumed
@@ -74,6 +86,11 @@ class ChapterRepository {
       chapter.consumedAt = DateTime.now();
       await isar.chapters.put(chapter);
     });
+
+    if (onSync != null) {
+      final totalRead = await getReadChapters(entrySourceId).then((list) => list.length);
+      onSync!(entrySourceId, totalRead, true);
+    }
   }
 
   /// Mark a chapter as unread

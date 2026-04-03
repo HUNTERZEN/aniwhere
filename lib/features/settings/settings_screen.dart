@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
+import '../../core/router/app_router.dart';
 import '../../data/models/app_settings.dart';
 
 /// Settings screen for app configuration
@@ -112,22 +115,10 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Tracking',
             children: [
               _SettingsTile(
-                icon: Icons.link,
-                title: 'MyAnimeList',
-                subtitle: 'Not connected',
-                onTap: () {},
-              ),
-              _SettingsTile(
-                icon: Icons.link,
-                title: 'AniList',
-                subtitle: 'Not connected',
-                onTap: () {},
-              ),
-              _SettingsTile(
-                icon: Icons.link,
-                title: 'Kitsu',
-                subtitle: 'Not connected',
-                onTap: () {},
+                icon: Icons.sync,
+                title: 'Manage Trackers',
+                subtitle: 'Connect to MyAnimeList, AniList, Kitsu',
+                onTap: () => context.push(AppRouter.trackerSettings),
               ),
             ],
           ),

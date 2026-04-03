@@ -35,7 +35,14 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
 
 /// Provides the chapter repository
 final chapterRepositoryProvider = Provider<ChapterRepository>((ref) {
-  return ChapterRepository();
+  return ChapterRepository(
+    onSync: (entrySourceId, progress, isConsumed) async {
+      // In a full tracker implementation, we would look up the matched 
+      // Tracker Media IDs from Isar here and dispatch updateStatus() to all 
+      // active TrackerServices (MAL, AniList, etc).
+      print('DEBUG: Syncing progress to trackers for $entrySourceId -> $progress');
+    },
+  );
 });
 
 // ============================================================================

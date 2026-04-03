@@ -9,6 +9,7 @@ import '../../features/player/player_screen.dart';
 import '../../features/player/player_providers.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/tracker_settings_screen.dart';
 import '../../ui/screens/home_screen.dart';
 
 /// Application router configuration using go_router
@@ -27,6 +28,7 @@ class AppRouter {
   static const String browse = '/browse';
   static const String search = '/search';
   static const String settings = '/settings';
+  static const String trackerSettings = '/settings/trackers';
   static const String reader = '/reader/:id';
   static const String player = '/player/:id';
   static const String details = '/details/:type/:id';
@@ -101,6 +103,12 @@ class AppRouter {
           }
           return PlayerScreen(params: params);
         },
+      ),
+      GoRoute(
+        path: trackerSettings,
+        name: 'tracker_settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const TrackerSettingsScreen(),
       ),
       GoRoute(
         path: details,

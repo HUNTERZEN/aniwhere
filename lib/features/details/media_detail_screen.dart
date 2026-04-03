@@ -10,6 +10,7 @@ import '../../data/models/library_entry.dart';
 import '../../core/utils/providers.dart';
 import '../reader/reader_providers.dart';
 import '../player/player_providers.dart';
+import 'tracker_status_sheet.dart';
 
 /// Provider for media details
 final mediaDetailsProvider = FutureProvider.family<SourceMedia, (Source, String)>(
@@ -294,10 +295,9 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
         ),
         const SizedBox(width: 12),
         OutlinedButton.icon(
-          onPressed: () {
-            // Track on external services
-            _showTrackingSheet();
-          },
+          onPressed: media != null ? () {
+            _showTrackingSheet(media.title);
+          } : null,
           icon: const Icon(Icons.bookmark_border),
           label: const Text('Track'),
         ),
@@ -374,53 +374,14 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     }
   }
 
-  void _showTrackingSheet() {
+  void _showTrackingSheet(String title) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Track on',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('MyAnimeList'),
-              subtitle: const Text('Not connected'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement MAL tracking in Phase 6
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('AniList'),
-              subtitle: const Text('Not connected'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement AniList tracking in Phase 6
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('Kitsu'),
-              subtitle: const Text('Not connected'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement Kitsu tracking in Phase 6
-              },
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      builder: (context) => TrackerStatusSheet(title: title),
     );
   }
 }
