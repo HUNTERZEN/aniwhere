@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
 import 'source.dart';
+import 'database_service.dart';
+import '../models/app_settings.dart';
 
 /// Gogoanime-style anime source implementation
 /// Uses consumet API as a proxy for anime content
@@ -16,6 +18,30 @@ class GogoanimeSource extends WatchableSource {
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
   ));
+
+  Future<void> _updateSettings() async {
+    try {
+      final isar = await DatabaseService.instance;
+      final settings = await isar.appSettings.get(0);
+      if (settings != null) {
+        if (settings.consumetApiUrl.isNotEmpty) {
+          _dio.options.baseUrl = settings.consumetApiUrl;
+        }
+      }
+    } catch (e) {
+      // Ignore database errs and fallback to init options
+    }
+  }
+
+  Future<AnimeAudioPreference> _getAudioPreference() async {
+    try {
+      final isar = await DatabaseService.instance;
+      final settings = await isar.appSettings.get(0);
+      return settings?.animeAudioPreference ?? AnimeAudioPreference.sub;
+    } catch (e) {
+      return AnimeAudioPreference.sub;
+    }
+  }
 
   @override
   String get id => 'gogoanime';
@@ -84,6 +110,7 @@ class GogoanimeSource extends WatchableSource {
 
   @override
   Future<SourcePaginatedResult<SourceMedia>> getPopular(int page) async {
+    await _updateSettings();
     try {
       final response = await _dio.get('/top-airing', queryParameters: {
         'page': page,
@@ -97,10 +124,14 @@ class GogoanimeSource extends WatchableSource {
 
   @override
   Future<SourcePaginatedResult<SourceMedia>> getLatest(int page) async {
+    await _updateSettings();
+    final audioPref = await _getAudioPreference();
+    final type = audioPref == AnimeAudioPreference.dub ? 2 : 1;
+    
     try {
       final response = await _dio.get('/recent-episodes', queryParameters: {
         'page': page,
-        'type': 1,
+        'type': type,
       });
 
       return _parseRecentEpisodes(response.data, page);
@@ -115,8 +146,14 @@ class GogoanimeSource extends WatchableSource {
     int page, {
     Map<String, dynamic>? filters,
   }) async {
+    await _updateSettings();
+    
+    // Gogoanime treats sub/dub as separate query items. We could append '(Dub)' to the search query if dub is preferred.
+    final audioPref = await _getAudioPreference();
+    final searchQuery = audioPref == AnimeAudioPreference.dub ? '$query dub' : query;
+
     try {
-      final response = await _dio.get('/$query', queryParameters: {
+      final response = await _dio.get('/$searchQuery', queryParameters: {
         'page': page,
       });
 
@@ -128,6 +165,7 @@ class GogoanimeSource extends WatchableSource {
 
   @override
   Future<SourceMedia> getDetails(String id) async {
+    await _updateSettings();
     try {
       final response = await _dio.get('/info/$id');
       return _parseAnimeDetails(response.data);
@@ -138,6 +176,7 @@ class GogoanimeSource extends WatchableSource {
 
   @override
   Future<List<SourceChapter>> getChapters(String mediaId) async {
+    await _updateSettings();
     try {
       final response = await _dio.get('/info/$mediaId');
       final episodes = response.data['episodes'] as List? ?? [];
@@ -150,6 +189,7 @@ class GogoanimeSource extends WatchableSource {
 
   @override
   Future<List<SourceVideo>> getVideoStreams(String episodeId) async {
+    await _updateSettings();
     try {
       final response = await _dio.get('/watch/$episodeId');
       final sources = response.data['sources'] as List? ?? [];

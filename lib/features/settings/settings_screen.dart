@@ -15,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeNotifierProvider);
+    final settingsAsync = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -119,6 +120,100 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Manage Trackers',
                 subtitle: 'Connect to MyAnimeList, AniList, Kitsu',
                 onTap: () => context.push(AppRouter.trackerSettings),
+              ),
+            ],
+          ),
+
+          // API Configuration Section
+          _SettingsSection(
+            title: 'API Configuration',
+            children: [
+              settingsAsync.when(
+                data: (settings) {
+                  if (settings == null) return const SizedBox.shrink();
+                  return Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.audiotrack),
+                        title: const Text('Preferred Anime Audio'),
+                        subtitle: Text(settings.animeAudioPreference == AnimeAudioPreference.dub ? 'English Dubbed' : 'Original Japanese (Subbed)'),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Preferred Audio'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  RadioListTile<AnimeAudioPreference>(
+                                    title: const Text('Original Japanese (Subbed)'),
+                                    value: AnimeAudioPreference.sub,
+                                    groupValue: settings.animeAudioPreference,
+                                    onChanged: (value) {
+                                      if (value != null) {
+                                        final newSettings = settings..animeAudioPreference = value;
+                                        ref.read(settingsRepositoryProvider).saveSettings(newSettings);
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  ),
+                                  RadioListTile<AnimeAudioPreference>(
+                                    title: const Text('English Dubbed'),
+                                    value: AnimeAudioPreference.dub,
+                                    groupValue: settings.animeAudioPreference,
+                                    onChanged: (value) {
+                                      if (value != null) {
+                                        final newSettings = settings..animeAudioPreference = value;
+                                        ref.read(settingsRepositoryProvider).saveSettings(newSettings);
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.link),
+                        title: const Text('Consumet API URL (Gogoanime)'),
+                        subtitle: Text(settings.consumetApiUrl),
+                        onTap: () {
+                          final controller = TextEditingController(text: settings.consumetApiUrl);
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Consumet API URL'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  hintText: 'https://consumet-api-clone.vercel.app/anime/gogoanime',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final newSettings = settings..consumetApiUrl = controller.text.trim();
+                                    ref.read(settingsRepositoryProvider).saveSettings(newSettings);
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Save'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Text('Error loading settings: $error'),
               ),
             ],
           ),

@@ -47,9 +47,14 @@ class AppSettings {
   bool showUnreadBadge = true;
   bool showDownloadBadge = true;
 
-  // Browse Settings
+  // Browse/API Settings
   bool showNsfwContent = false;
   List<String> enabledSources = [];
+  
+  @Enumerated(EnumType.name)
+  AnimeAudioPreference animeAudioPreference = AnimeAudioPreference.sub;
+  
+  String consumetApiUrl = 'https://consumet-api-clone.vercel.app/anime/gogoanime';
 
   // Download Settings
   String? downloadPath;
@@ -107,4 +112,9 @@ enum LibrarySortMode {
   dateAdded,
   unreadCount,
   totalChapters,
+}
+
+enum AnimeAudioPreference {
+  sub,
+  dub,
 }

@@ -90,6 +90,7 @@ class MangaDexSource extends ReadableSource {
         'order[followedCount]': 'desc',
         'contentRating[]': ['safe', 'suggestive'],
         'includes[]': ['cover_art', 'author', 'artist'],
+        'availableTranslatedLanguage[]': ['en'],
         'hasAvailableChapters': true,
       });
 
@@ -108,6 +109,7 @@ class MangaDexSource extends ReadableSource {
         'order[latestUploadedChapter]': 'desc',
         'contentRating[]': ['safe', 'suggestive'],
         'includes[]': ['cover_art', 'author', 'artist'],
+        'availableTranslatedLanguage[]': ['en'],
         'hasAvailableChapters': true,
       });
 
@@ -129,6 +131,7 @@ class MangaDexSource extends ReadableSource {
         'offset': (page - 1) * 20,
         'title': query,
         'contentRating[]': filters?['contentRating'] ?? ['safe', 'suggestive'],
+        'availableTranslatedLanguage[]': ['en'],
         'includes[]': ['cover_art', 'author', 'artist'],
       };
 
