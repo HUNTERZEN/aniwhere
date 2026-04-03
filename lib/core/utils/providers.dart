@@ -45,6 +45,11 @@ final chapterRepositoryProvider = Provider<ChapterRepository>((ref) {
   );
 });
 
+/// Provides the search history repository
+final searchHistoryRepositoryProvider = Provider<SearchHistoryRepository>((ref) {
+  return SearchHistoryRepository();
+});
+
 // ============================================================================
 // Library Providers
 // ============================================================================

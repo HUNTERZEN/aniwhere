@@ -6,6 +6,7 @@ import '../models/library_entry.dart';
 import '../models/chapter.dart';
 import '../models/app_settings.dart';
 import '../models/category.dart';
+import '../models/search_history.dart';
 
 /// Database service for managing Isar database instance
 class DatabaseService {
@@ -29,6 +30,7 @@ class DatabaseService {
         ChapterSchema,
         AppSettingsSchema,
         LibraryCategorySchema,
+        SearchHistoryEntrySchema,
       ],
       directory: dir.path,
       name: 'aniwhere',
