@@ -50,6 +50,11 @@ final searchHistoryRepositoryProvider = Provider<SearchHistoryRepository>((ref) 
   return SearchHistoryRepository();
 });
 
+/// Provides the backup repository
+final backupRepositoryProvider = Provider<BackupRepository>((ref) {
+  return BackupRepository();
+});
+
 // ============================================================================
 // Library Providers
 // ============================================================================

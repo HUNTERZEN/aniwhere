@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,18 +26,37 @@ class DatabaseService {
   static Future<Isar> _initialize() async {
     final dir = await getApplicationDocumentsDirectory();
 
-    _isar = await Isar.open(
-      [
-        LibraryEntrySchema,
-        ChapterSchema,
-        AppSettingsSchema,
-        LibraryCategorySchema,
-        SearchHistoryEntrySchema,
-      ],
-      directory: dir.path,
-      name: 'aniwhere',
-      inspector: kDebugMode, // Enable inspector in debug mode
-    );
+    final schemas = [
+      LibraryEntrySchema,
+      ChapterSchema,
+      AppSettingsSchema,
+      LibraryCategorySchema,
+      SearchHistoryEntrySchema,
+    ];
+
+    try {
+      _isar = await Isar.open(
+        schemas,
+        directory: dir.path,
+        name: 'aniwhere',
+        inspector: kDebugMode,
+      );
+    } catch (e) {
+      // Schema mismatch — delete old DB file and re-open
+      debugPrint('Isar schema error, resetting database: $e');
+      await Isar.getInstance('aniwhere')?.close();
+      final dbFile = File('${dir.path}/aniwhere.isar');
+      if (await dbFile.exists()) await dbFile.delete();
+      final lockFile = File('${dir.path}/aniwhere.isar.lock');
+      if (await lockFile.exists()) await lockFile.delete();
+
+      _isar = await Isar.open(
+        schemas,
+        directory: dir.path,
+        name: 'aniwhere',
+        inspector: kDebugMode,
+      );
+    }
 
     // Ensure default settings exist
     final settings = await _isar!.appSettings.get(0);

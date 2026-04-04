@@ -8,6 +8,8 @@ import '../../core/router/app_router.dart';
 import '../../core/utils/providers.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/app_settings.dart';
+import '../../data/sources/source_registry.dart';
+import '../details/media_detail_screen.dart';
 
 /// Provider for filtered and sorted library entries
 final filteredLibraryProvider = Provider<List<LibraryEntry>>((ref) {
@@ -307,9 +309,24 @@ class _LibraryGridItem extends ConsumerWidget {
     final unreadCount = _calculateUnread();
 
     return GestureDetector(
-      onTap: () => context.go(
-        '${AppRouter.details}?sourceId=${entry.sourceId}&mediaId=${entry.mediaId}',
-      ),
+      onTap: () {
+        final source = ref.read(sourceByIdProvider(entry.sourceName));
+        if (source != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MediaDetailScreen(
+                mediaId: entry.mediaId,
+                source: source,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Source "${entry.sourceName}" not found')),
+          );
+        }
+      },
       onLongPress: () => _showEntryActions(context, ref),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,9 +542,24 @@ class _LibraryListItem extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => context.go(
-          '${AppRouter.details}?sourceId=${entry.sourceId}&mediaId=${entry.mediaId}',
-        ),
+        onTap: () {
+          final source = ref.read(sourceByIdProvider(entry.sourceName));
+          if (source != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MediaDetailScreen(
+                  mediaId: entry.mediaId,
+                  source: source,
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Source "${entry.sourceName}" not found')),
+            );
+          }
+        },
         onLongPress: () => _showEntryActions(context, ref),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
