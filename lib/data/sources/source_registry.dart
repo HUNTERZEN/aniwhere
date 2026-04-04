@@ -4,6 +4,7 @@ import 'source.dart';
 import 'mangadex_source.dart';
 import 'mangapill_source.dart';
 import 'gogoanime_source.dart';
+import 'aniwatch_source.dart';
 
 /// Registry of all available sources
 class SourceRegistry {
@@ -21,7 +22,10 @@ class SourceRegistry {
     // MangaPill - Manga source (English)
     register(MangaPillSource());
     
-    // Gogoanime - Anime source
+    // Aniwatch - Anime source with English subtitles (primary)
+    register(AniwatchSource());
+    
+    // Gogoanime - Anime source (fallback)
     register(GogoanimeSource());
   }
 
