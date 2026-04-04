@@ -1,198 +1,189 @@
-<p align="center">
-  <img src="assets/icons/logo.png" alt="Aniwhere Logo" width="120" height="120">
-</p>
+<div align="center">
 
-<h1 align="center">Aniwhere</h1>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=7C3AED&height=200&section=header&text=ANIWHERE&fontSize=80&fontColor=ffffff&fontAlignY=38&desc=watch%20it.%20read%20it.%20aniwhere.&descAlignY=58&descSize=18&descColor=d8b4fe" width="100%"/>
 
-<p align="center">
-  <em>Watch and read anime, manga, anywhere.</em>
-</p>
+<br/>
 
-<p align="center">
-  <a href="https://github.com/yourusername/aniwhere/releases">
-    <img src="https://img.shields.io/github/v/release/yourusername/aniwhere?style=flat-square" alt="Release">
-  </a>
-  <a href="https://github.com/yourusername/aniwhere/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/yourusername/aniwhere?style=flat-square" alt="License">
-  </a>
-  <a href="https://flutter.dev">
-    <img src="https://img.shields.io/badge/Flutter-3.x-02569B?style=flat-square&logo=flutter" alt="Flutter">
-  </a>
-  <a href="https://dart.dev">
-    <img src="https://img.shields.io/badge/Dart-3.x-0175C2?style=flat-square&logo=dart" alt="Dart">
-  </a>
-</p>
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=apple&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#screenshots">Screenshots</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#building">Building</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#license">License</a>
-</p>
+<br/>
+
+[![License](https://img.shields.io/github/license/HUNTERZEN/aniwhere?style=flat-square&color=7C3AED&labelColor=0d0d0d)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/HUNTERZEN/aniwhere?style=flat-square&color=7C3AED&labelColor=0d0d0d)](https://github.com/HUNTERZEN/aniwhere/stargazers)
+[![Issues](https://img.shields.io/github/issues/HUNTERZEN/aniwhere?style=flat-square&color=7C3AED&labelColor=0d0d0d)](https://github.com/HUNTERZEN/aniwhere/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/HUNTERZEN/aniwhere?style=flat-square&color=7C3AED&labelColor=0d0d0d)](https://github.com/HUNTERZEN/aniwhere/commits)
+
+</div>
+
+<br/>
 
 ---
 
-## ✨ Features
+## ◈ what is this?
 
-- 📚 **Multi-Source Support** — Read manga, manhwa, manhua, and novels from various sources
-- 🎬 **Anime Streaming** — Watch anime with HLS/MP4 support and custom player controls
-- 📱 **Cross-Platform** — Available on Android, iOS, Windows, Linux, and macOS
-- 🔌 **Extension System** — Add custom sources via JavaScript extensions
-- 📊 **Tracker Integration** — Sync progress with MyAnimeList, AniList, and Kitsu
-- 🌙 **Dark Theme** — Beautiful dark-first design with purple accent
-- 💾 **Offline Reading** — Download chapters for offline access
-- 🔄 **Backup & Restore** — Export and import your library
+**Aniwhere** is a free, open-source Flutter app for people who refuse to be tied down to one platform, one app, or one source.
 
-## 📱 Screenshots
+Watch anime. Read manga. Devour webtoons. Binge light novels.  
+On your phone, your desktop, your old laptop — your anything.
 
-<p align="center">
-  <img src="assets/screenshots/library.png" width="200" alt="Library">
-  <img src="assets/screenshots/browse.png" width="200" alt="Browse">
-  <img src="assets/screenshots/reader.png" width="200" alt="Reader">
-  <img src="assets/screenshots/player.png" width="200" alt="Player">
-</p>
+> Built from scratch by **[HUNTERZEN](https://github.com/HUNTERZEN)** — not a fork, not a clone. *A thing of its own.*
 
-## 📥 Installation
+<br/>
 
-### Android
-Download the latest APK from the [Releases](https://github.com/yourusername/aniwhere/releases) page.
+---
 
-### iOS
-*Coming soon* — TestFlight beta available for early testers.
+## ◈ the feature wall
 
-### Windows
-Download the latest MSIX installer from [Releases](https://github.com/yourusername/aniwhere/releases).
+| 　 | Feature |
+|:---:|:---|
+| 📖 | Manga · Webtoon · Comic · Light Novel reader |
+| 🎬 | Anime & movie streaming via extensions |
+| 🔌 | JS-based extension system — add any source |
+| 📚 | Library with categories & read progress tracking |
+| 🔄 | Tracker sync — MyAnimeList · AniList · Kitsu |
+| 📥 | Offline reading & local file support |
+| 🎨 | Configurable reader — direction, zoom, background |
+| 🌑 | Dark-first UI with deep purple accent |
+| 💾 | Backup & restore your entire library |
+| 🖥️ | Android · iOS · Windows · Linux · macOS |
 
-### Linux
-```bash
-# AppImage
-chmod +x Aniwhere-*.AppImage
-./Aniwhere-*.AppImage
+<br/>
 
-# Or build from source (see below)
-```
+---
 
-### macOS
-Download the DMG from [Releases](https://github.com/yourusername/aniwhere/releases).
+## ◈ built with
 
-## 🔧 Building from Source
+| Layer | Tech |
+|:---|:---|
+| Framework | Flutter 3.x + Dart 3 (null safety) |
+| State Management | Riverpod |
+| Local Database | Isar |
+| Networking | Dio |
+| Video Playback | media\_kit |
+| Extension Engine | flutter\_js (QuickJS) |
+| Navigation | go\_router |
+| Image Caching | cached\_network\_image |
+| Tracker Auth | OAuth2 — MAL · AniList · Kitsu |
 
-### Prerequisites
+<br/>
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.x or later)
-- [Dart SDK](https://dart.dev/get-dart) (3.x or later)
+---
 
-#### Platform-specific requirements:
+## ◈ getting started
 
-**Linux:**
-```bash
-sudo apt install libmpv-dev libgtk-3-dev
-```
-
-**Windows:**
-- Visual Studio 2022 with C++ desktop development workload
-
-**macOS:**
-- Xcode 14 or later
-
-### Build Steps
+> Requires Flutter 3.19+
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/aniwhere.git
+# clone
+git clone https://github.com/HUNTERZEN/aniwhere.git
 cd aniwhere
 
-# Install dependencies
+# install deps
 flutter pub get
 
-# Generate code (Isar models)
-flutter pub run build_runner build
-
-# Run in debug mode
+# run
 flutter run
 
-# Build for release
-flutter build apk          # Android
-flutter build ios          # iOS
-flutter build windows      # Windows
-flutter build linux        # Linux
-flutter build macos        # macOS
+# build (Android)
+flutter build apk --release
 ```
 
-## 🏗️ Project Structure
+<br/>
+
+---
+
+## ◈ project structure
 
 ```
 aniwhere/
 ├── lib/
-│   ├── main.dart              # App entry point
-│   ├── core/                  # Core utilities
-│   │   ├── constants/         # App constants
-│   │   ├── theme/             # Theme configuration
-│   │   ├── router/            # Navigation (go_router)
-│   │   └── utils/             # Riverpod providers
-│   ├── data/                  # Data layer
-│   │   ├── models/            # Isar database models
-│   │   ├── sources/           # Data sources
-│   │   └── repositories/      # Repository pattern
-│   ├── features/              # Feature modules
-│   │   ├── library/           # Library management
-│   │   ├── browse/            # Source browsing
-│   │   ├── reader/            # Manga/novel reader
-│   │   ├── player/            # Video player
-│   │   ├── tracker/           # External trackers
-│   │   ├── search/            # Global search
-│   │   └── settings/          # App settings
-│   └── ui/                    # Shared UI components
-│       ├── widgets/           # Reusable widgets
-│       └── screens/           # Common screens
-├── extensions/                # JS extension storage
-├── assets/                    # Static assets
-└── test/                      # Unit & widget tests
+│   ├── core/          # theme, router, constants
+│   ├── data/          # models, sources, repositories
+│   ├── features/      # library · browse · reader
+│   │                  # player · tracker · search · settings
+│   └── ui/            # shared widgets & screens
+├── extensions/        # JS source extensions
+├── assets/            # icons, fonts
+└── test/
 ```
 
-## 🛠️ Tech Stack
-
-| Category | Technology |
-|----------|------------|
-| Framework | Flutter 3.x |
-| Language | Dart 3.x |
-| State Management | Riverpod |
-| Navigation | go_router |
-| Local Database | Isar |
-| Video Player | media_kit |
-| HTTP Client | Dio |
-| Extensions | flutter_js |
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a PR.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-This application does not host any content. It is a reader/player that connects to publicly available sources. The developers are not responsible for any content accessed through the app.
-
-## 💜 Acknowledgments
-
-- [Flutter](https://flutter.dev) — UI framework
-- [Riverpod](https://riverpod.dev) — State management
-- [Isar](https://isar.dev) — Local database
-- [media_kit](https://github.com/media-kit/media-kit) — Video playback
-- [MangaDex](https://mangadex.org) — Manga source API
+<br/>
 
 ---
 
-<p align="center">
-  Made with 💜 by the Aniwhere Team
-</p>
+## ◈ extension system
+
+Sources are `.js` files powered by a lightweight **QuickJS engine** at runtime.  
+No rebuilds. No app updates. Drop a file, enable it, done.
+
+```
+extensions/
+├── mangadex.js
+├── gogoanime.js
+└── your-source.js    ← write your own
+```
+
+> Docs for writing extensions → [`/docs/extensions.md`](./docs/extensions.md) *(coming soon)*
+
+<br/>
+
+---
+
+## ◈ roadmap
+
+| Status | Task |
+|:---:|:---|
+| ✅ | Project scaffold & clean architecture |
+| ✅ | Theme system — dark-first, `#7C3AED` purple accent |
+| ✅ | Video player screen with custom controls |
+| ✅ | Browse screen + MangaDex built-in source |
+| ✅ | Manga reader — paged & vertical scroll |
+| ✅ | Library with progress tracking |
+| ✅ | MAL / AniList / Kitsu tracker sync |
+| ✅ | Extension manager UI |
+| 🔲 | Backup & restore |
+| 🔲 | iOS & desktop builds |
+
+<br/>
+
+---
+
+## ◈ contributing
+
+PRs are welcome. Issues are welcome. No ego here.
+
+```bash
+git checkout -b feat/your-idea
+# → commit → push → open PR
+```
+
+Keep code clean, typed, and null-safe. That's it.
+
+<br/>
+
+---
+
+## ◈ disclaimer
+
+Aniwhere does **not** host, store, or distribute any copyrighted content.  
+It is a client — like a browser — that connects to third-party sources via user-installed extensions.  
+*You are responsible for what you do with it.*
+
+<br/>
+
+---
+
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=7C3AED&height=120&section=footer" width="100%"/>
+
+**made with obsession by [HUNTERZEN](https://github.com/HUNTERZEN)**
+
+*if it helped — drop a ⭐. it costs nothing.*
+
+</div>
