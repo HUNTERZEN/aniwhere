@@ -13,17 +13,26 @@ import '../models/search_history.dart';
 /// Database service for managing Isar database instance
 class DatabaseService {
   static Isar? _isar;
+  static Future<Isar>? _initFuture;
 
   /// Get the Isar instance, initializing if needed
-  static Future<Isar> get instance async {
+  static Future<Isar> get instance {
     if (_isar != null && _isar!.isOpen) {
-      return _isar!;
+      return Future.value(_isar!);
     }
-    return await _initialize();
+    _initFuture ??= _initialize().whenComplete(() => _initFuture = null);
+    return _initFuture!;
   }
 
   /// Initialize the Isar database
   static Future<Isar> _initialize() async {
+    // Check if it's already running natively to support hot restarts
+    final existing = Isar.getInstance('aniwhere');
+    if (existing != null && existing.isOpen) {
+      _isar = existing;
+      return existing;
+    }
+
     final dir = await getApplicationDocumentsDirectory();
 
     final schemas = [

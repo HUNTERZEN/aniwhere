@@ -49,7 +49,12 @@ class _TrackerListTileState extends ConsumerState<_TrackerListTile> {
       if (widget.tracker.isLoggedIn) {
         await widget.tracker.logout();
       } else {
-        await widget.tracker.authenticate();
+        final success = await widget.tracker.authenticate();
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Authentication failed or was cancelled. Note: Some trackers require setting up your own API keys in the source code.')),
+          );
+        }
       }
       
       if (mounted) {

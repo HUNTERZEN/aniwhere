@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
@@ -328,15 +329,12 @@ class _SearchMediaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MediaDetailScreen(
-              mediaId: media.id,
-              source: source,
-              initialMedia: media,
-            ),
-          ),
+        context.push(
+          '/details/search/${media.id}',
+          extra: {
+            'source': source,
+            'initialMedia': media,
+          },
         );
       },
       child: Column(

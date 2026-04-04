@@ -11,6 +11,9 @@ import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/tracker_settings_screen.dart';
 import '../../ui/screens/home_screen.dart';
+import '../../data/sources/source.dart';
+import '../../features/browse/source_browse_screen.dart';
+import '../../features/details/media_detail_screen.dart';
 
 /// Application router configuration using go_router
 class AppRouter {
@@ -111,16 +114,41 @@ class AppRouter {
         builder: (context, state) => const TrackerSettingsScreen(),
       ),
       GoRoute(
+        path: '/source_browse/:id',
+        name: 'source_browse',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final source = state.extra as Source?;
+          if (source == null) {
+            return const Scaffold(body: Center(child: Text('Error: No source provided')));
+          }
+          return SourceBrowseScreen(source: source);
+        },
+      ),
+      GoRoute(
         path: details,
         name: 'details',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final type = state.pathParameters['type']!;
-          final id = state.pathParameters['id']!;
-          // TODO: Implement DetailsScreen
-          return Scaffold(
-            appBar: AppBar(title: Text('$type: $id')),
-            body: const Center(child: Text('Details screen')),
+          final mediaId = state.pathParameters['id']!;
+          Source? source;
+          SourceMedia? initialMedia;
+          
+          if (state.extra is Map<String, dynamic>) {
+            final extra = state.extra as Map<String, dynamic>;
+            source = extra['source'] as Source?;
+            initialMedia = extra['initialMedia'] as SourceMedia?;
+          } else if (state.extra is Source) {
+            source = state.extra as Source?;
+          }
+          
+          if (source == null) {
+            return const Scaffold(body: Center(child: Text('Error: No source provided')));
+          }
+          return MediaDetailScreen(
+            mediaId: mediaId,
+            source: source,
+            initialMedia: initialMedia,
           );
         },
       ),

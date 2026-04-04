@@ -312,14 +312,9 @@ class _LibraryGridItem extends ConsumerWidget {
       onTap: () {
         final source = ref.read(sourceByIdProvider(entry.sourceName));
         if (source != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MediaDetailScreen(
-                mediaId: entry.mediaId,
-                source: source,
-              ),
-            ),
+          context.push(
+            '/details/library/${entry.mediaId}',
+            extra: source,
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -545,14 +540,9 @@ class _LibraryListItem extends ConsumerWidget {
         onTap: () {
           final source = ref.read(sourceByIdProvider(entry.sourceName));
           if (source != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MediaDetailScreen(
-                  mediaId: entry.mediaId,
-                  source: source,
-                ),
-              ),
+            context.push(
+              '/details/library/${entry.mediaId}',
+              extra: source,
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
