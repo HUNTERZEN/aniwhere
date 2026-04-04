@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/sources/source.dart';
-import '../details/media_detail_screen.dart';
 
 /// Provider for popular content from a source
 final popularContentProvider = FutureProvider.family<SourcePaginatedResult<SourceMedia>, (Source, int)>(
@@ -476,6 +475,7 @@ class _MediaCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      httpHeaders: _getImageHeaders(media.coverUrl!),
                       placeholder: (_, __) => Container(
                         color: AppColors.surfaceDark,
                         child: const Center(
@@ -497,6 +497,14 @@ class _MediaCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Get appropriate headers for image loading based on URL
+  Map<String, String> _getImageHeaders(String url) {
+    if (url.contains('mangapill') || url.contains('readdetectiveconan')) {
+      return {'Referer': 'https://mangapill.com/'};
+    }
+    return {};
   }
 
   Widget _buildPlaceholder() {

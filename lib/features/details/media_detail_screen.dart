@@ -87,6 +87,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                     CachedNetworkImage(
                       imageUrl: media!.coverUrl!,
                       fit: BoxFit.cover,
+                      httpHeaders: _getImageHeaders(media.coverUrl!),
                       errorWidget: (_, __, ___) => Container(
                         color: AppColors.surfaceDark,
                       ),
@@ -383,6 +384,14 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
       ),
       builder: (context) => TrackerStatusSheet(title: title),
     );
+  }
+
+  /// Get appropriate headers for image loading based on URL
+  Map<String, String> _getImageHeaders(String url) {
+    if (url.contains('mangapill') || url.contains('readdetectiveconan')) {
+      return {'Referer': 'https://mangapill.com/'};
+    }
+    return {};
   }
 }
 

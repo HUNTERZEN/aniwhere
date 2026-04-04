@@ -9,7 +9,6 @@ import '../../core/utils/providers.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/sources/source_registry.dart';
-import '../details/media_detail_screen.dart';
 
 /// Provider for filtered and sorted library entries
 final filteredLibraryProvider = Provider<List<LibraryEntry>>((ref) {
@@ -343,6 +342,7 @@ class _LibraryGridItem extends ConsumerWidget {
                     CachedNetworkImage(
                       imageUrl: entry.coverUrl!,
                       fit: BoxFit.cover,
+                      httpHeaders: _getImageHeaders(entry.coverUrl!),
                       placeholder: (_, __) => _buildPlaceholder(),
                       errorWidget: (_, __, ___) => _buildPlaceholder(),
                     )
@@ -474,6 +474,14 @@ class _LibraryGridItem extends ConsumerWidget {
     }
   }
 
+  /// Get appropriate headers for image loading based on URL
+  Map<String, String> _getImageHeaders(String url) {
+    if (url.contains('mangapill') || url.contains('readdetectiveconan')) {
+      return {'Referer': 'https://mangapill.com/'};
+    }
+    return {};
+  }
+
   void _showEntryActions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -573,6 +581,7 @@ class _LibraryListItem extends ConsumerWidget {
                         ? CachedNetworkImage(
                             imageUrl: entry.coverUrl!,
                             fit: BoxFit.cover,
+                            httpHeaders: _getImageHeaders(entry.coverUrl!),
                             placeholder: (_, __) => const Center(
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
@@ -718,6 +727,14 @@ class _LibraryListItem extends ConsumerWidget {
       case MediaStatus.planToWatch:
         return Colors.grey;
     }
+  }
+
+  /// Get appropriate headers for image loading based on URL
+  Map<String, String> _getImageHeaders(String url) {
+    if (url.contains('mangapill') || url.contains('readdetectiveconan')) {
+      return {'Referer': 'https://mangapill.com/'};
+    }
+    return {};
   }
 
   String _getStatusLabel() {

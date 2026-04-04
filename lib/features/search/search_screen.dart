@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
 import '../../data/sources/source.dart';
-import '../details/media_detail_screen.dart';
 import 'search_providers.dart';
 
 /// Global search screen for searching across all sources
@@ -354,6 +353,7 @@ class _SearchMediaCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      httpHeaders: _getImageHeaders(media.coverUrl!),
                       placeholder: (_, __) => Container(
                         color: AppColors.surfaceDark,
                         child: const Center(
@@ -375,6 +375,14 @@ class _SearchMediaCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Get appropriate headers for image loading based on URL
+  Map<String, String> _getImageHeaders(String url) {
+    if (url.contains('mangapill') || url.contains('readdetectiveconan')) {
+      return {'Referer': 'https://mangapill.com/'};
+    }
+    return {};
   }
 
   Widget _buildPlaceholder() {
