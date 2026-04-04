@@ -329,8 +329,9 @@ class _SearchMediaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        final encodedId = Uri.encodeComponent(media.id);
         context.push(
-          '/details/search/${media.id}',
+          '/details/search/$encodedId',
           extra: {
             'source': source,
             'initialMedia': media,

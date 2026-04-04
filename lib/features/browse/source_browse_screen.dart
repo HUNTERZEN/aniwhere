@@ -450,8 +450,10 @@ class _MediaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // URL-encode the media ID to handle IDs with slashes (e.g., "2/one-piece")
+        final encodedId = Uri.encodeComponent(media.id);
         context.push(
-          '/details/browse/${media.id}',
+          '/details/browse/$encodedId',
           extra: {
             'source': source,
             'initialMedia': media,

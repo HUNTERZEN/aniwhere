@@ -130,7 +130,9 @@ class AppRouter {
         name: 'details',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final mediaId = state.pathParameters['id']!;
+          // Decode the media ID (may be URL-encoded if it contains slashes)
+          final encodedId = state.pathParameters['id']!;
+          final mediaId = Uri.decodeComponent(encodedId);
           Source? source;
           SourceMedia? initialMedia;
           

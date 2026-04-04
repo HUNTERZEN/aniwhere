@@ -312,8 +312,9 @@ class _LibraryGridItem extends ConsumerWidget {
       onTap: () {
         final source = ref.read(sourceByIdProvider(entry.sourceName));
         if (source != null) {
+          final encodedId = Uri.encodeComponent(entry.mediaId);
           context.push(
-            '/details/library/${entry.mediaId}',
+            '/details/library/$encodedId',
             extra: source,
           );
         } else {
@@ -540,8 +541,9 @@ class _LibraryListItem extends ConsumerWidget {
         onTap: () {
           final source = ref.read(sourceByIdProvider(entry.sourceName));
           if (source != null) {
+            final encodedId = Uri.encodeComponent(entry.mediaId);
             context.push(
-              '/details/library/${entry.mediaId}',
+              '/details/library/$encodedId',
               extra: source,
             );
           } else {

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'source.dart';
 import 'mangadex_source.dart';
+import 'mangapill_source.dart';
 import 'gogoanime_source.dart';
 
 /// Registry of all available sources
@@ -14,8 +15,11 @@ class SourceRegistry {
   }
 
   void _registerBuiltInSources() {
-    // MangaDex - Manga source
+    // MangaDex - Manga source (English translations)
     register(MangaDexSource());
+    
+    // MangaPill - Manga source (English)
+    register(MangaPillSource());
     
     // Gogoanime - Anime source
     register(GogoanimeSource());

@@ -20,7 +20,7 @@ class MangaDexSource extends ReadableSource {
   String get name => 'MangaDex';
 
   @override
-  String get language => 'multi';
+  String get language => 'en';
 
   @override
   String get baseUrl => 'https://api.mangadex.org';
@@ -184,10 +184,19 @@ class MangaDexSource extends ReadableSource {
           'order[chapter]': 'desc',
           'translatedLanguage[]': ['en'],
           'includes[]': ['scanlation_group'],
+          'contentRating[]': ['safe', 'suggestive', 'erotica'],
         });
 
         final data = response.data['data'] as List;
         for (final chapter in data) {
+          // Only add chapters that have pages and aren't external
+          final attrs = chapter['attributes'] as Map<String, dynamic>;
+          final externalUrl = attrs['externalUrl'];
+          final pages = attrs['pages'] as int? ?? 0;
+          
+          // Skip external-only chapters (no pages available on MangaDex)
+          if (externalUrl != null && pages == 0) continue;
+          
           chapters.add(_parseChapter(chapter));
         }
 
@@ -195,6 +204,13 @@ class MangaDexSource extends ReadableSource {
         offset += limit;
         hasMore = offset < total;
       }
+
+      // Sort chapters by number (descending)
+      chapters.sort((a, b) {
+        final aNum = a.number ?? double.infinity;
+        final bNum = b.number ?? double.infinity;
+        return bNum.compareTo(aNum);
+      });
 
       return chapters;
     } catch (e) {
