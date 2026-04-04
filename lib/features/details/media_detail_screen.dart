@@ -471,8 +471,9 @@ class _ChapterTile extends StatelessWidget {
         episodes: chapters,
         initialEpisodeIndex: chapterIndex,
       );
+      final encodedId = Uri.encodeComponent(chapter.id);
       context.push(
-        AppRouter.player.replaceFirst(':id', chapter.id),
+        AppRouter.player.replaceFirst(':id', encodedId),
         extra: params,
       );
     } else {
@@ -484,8 +485,9 @@ class _ChapterTile extends StatelessWidget {
         chapters: chapters,
         initialChapterIndex: chapterIndex,
       );
+      final encodedId = Uri.encodeComponent(chapter.id);
       context.push(
-        AppRouter.reader.replaceFirst(':id', chapter.id),
+        AppRouter.reader.replaceFirst(':id', encodedId),
         extra: params,
       );
     }

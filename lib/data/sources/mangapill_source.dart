@@ -73,7 +73,6 @@ class MangaPillSource extends ReadableSource {
   @override
   Future<SourcePaginatedResult<SourceMedia>> getPopular(int page) async {
     try {
-      // MangaPill doesn't have a dedicated popular page, use search with type=manga
       final response = await _dio.get('/search', queryParameters: {
         'page': page,
         'type': 'manga',
@@ -88,7 +87,6 @@ class MangaPillSource extends ReadableSource {
   @override
   Future<SourcePaginatedResult<SourceMedia>> getLatest(int page) async {
     try {
-      // Use new mangas page for latest
       final response = await _dio.get('/mangas/new', queryParameters: {
         'page': page,
       });
@@ -111,13 +109,11 @@ class MangaPillSource extends ReadableSource {
         'page': page,
       };
 
-      // Apply filters
       if (filters != null) {
         if (filters['type'] != null && (filters['type'] as String).isNotEmpty) {
           queryParams['type'] = filters['type'];
         }
-        if (filters['status'] != null &&
-            (filters['status'] as String).isNotEmpty) {
+        if (filters['status'] != null && (filters['status'] as String).isNotEmpty) {
           queryParams['status'] = filters['status'];
         }
       }
@@ -132,7 +128,6 @@ class MangaPillSource extends ReadableSource {
   @override
   Future<SourceMedia> getDetails(String id) async {
     try {
-      // ID format: "2/one-piece" -> URL: /manga/2/one-piece
       final response = await _dio.get('/manga/$id');
       return _parseMangaDetails(response.data as String, id);
     } catch (e) {
@@ -143,7 +138,6 @@ class MangaPillSource extends ReadableSource {
   @override
   Future<List<SourceChapter>> getChapters(String mediaId) async {
     try {
-      // mediaId format: "2/one-piece"
       final response = await _dio.get('/manga/$mediaId');
       return _parseChapters(response.data as String);
     } catch (e) {
@@ -154,7 +148,6 @@ class MangaPillSource extends ReadableSource {
   @override
   Future<List<SourcePage>> getPages(String chapterId) async {
     try {
-      // chapterId format: "2-11179000/one-piece-chapter-1179"
       final response = await _dio.get('/chapters/$chapterId');
       return _parsePages(response.data as String);
     } catch (e) {
@@ -162,63 +155,54 @@ class MangaPillSource extends ReadableSource {
     }
   }
 
-  // Helper methods
+  /// Parse manga list from HTML
+  /// Structure: div.grid > div > a[href="/manga/..."] > figure > img
   SourcePaginatedResult<SourceMedia> _parseMangaList(String html, int page) {
     final document = html_parser.parse(html);
     final mangaList = <SourceMedia>[];
     final seen = <String>{};
 
-    // Find manga items in the grid - these are the divs containing manga links
-    // Structure: div > a[href="/manga/..."] > figure > img + div with title
-    final mangaContainers = document.querySelectorAll('div.my-3.grid > div, div.grid.gap-3 > div');
-    
-    for (final container in mangaContainers) {
-      final linkElement = container.querySelector('a[href*="/manga/"]');
+    // Find all manga card containers - they have a structure of:
+    // <div><a href="/manga/9815/meshinuma"><figure><img data-src="..."></figure></a>
+    //   <div class="flex flex-col"><a href="..."><div class="font-black">Title</div></a></div></div>
+    final containers = document.querySelectorAll('div.grid > div');
+
+    for (final container in containers) {
+      // Find the manga link
+      final linkElement = container.querySelector('a[href^="/manga/"]');
       if (linkElement == null) continue;
-      
+
       final href = linkElement.attributes['href'] ?? '';
       if (!href.startsWith('/manga/')) continue;
-      
-      // Extract ID from URL: /manga/2/one-piece -> 2/one-piece
-      final id = href.replaceFirst('/manga/', '');
+
+      // Extract ID: /manga/9815/meshinuma -> 9815/meshinuma
+      final id = href.substring(7); // Remove "/manga/"
       if (id.isEmpty || seen.contains(id)) continue;
       seen.add(id);
 
-      // Get title from the font-black div
+      // Get title from font-black div
       final titleElement = container.querySelector('div.font-black');
       final title = titleElement?.text.trim() ?? '';
       if (title.isEmpty) continue;
 
-      // Get cover image
-      final imgElement = container.querySelector('img');
-      final coverUrl = imgElement?.attributes['data-src'] ??
-          imgElement?.attributes['src'];
-
-      // Get genres
-      final genreElements = container.querySelectorAll('div.bg-card');
-      final genres = genreElements
-          .map((e) => e.text.trim())
-          .where((g) => g.isNotEmpty)
-          .toList();
-
-      // Get status from colored badges
-      String? status;
-      final statusBadge = container.querySelector('div.bg-green-500, div.bg-red-500, div.bg-yellow-500');
-      if (statusBadge != null) {
-        status = statusBadge.text.trim();
+      // Get cover image from img with data-src
+      final imgElement = container.querySelector('img[data-src]');
+      String? coverUrl = imgElement?.attributes['data-src'];
+      
+      // Fallback to src if data-src not found
+      if (coverUrl == null || coverUrl.isEmpty) {
+        coverUrl = imgElement?.attributes['src'];
       }
 
       mangaList.add(SourceMedia(
         id: id,
         title: title,
         coverUrl: coverUrl,
-        genres: genres,
-        status: status,
         contentType: SourceContentType.manga,
       ));
     }
 
-    // Check for next page link
+    // Check for next page
     final nextPageLink = document.querySelector('a[href*="page=${page + 1}"]');
     final hasNextPage = nextPageLink != null;
 
@@ -229,43 +213,49 @@ class MangaPillSource extends ReadableSource {
     );
   }
 
+  /// Parse manga details page
   SourceMedia _parseMangaDetails(String html, String id) {
     final document = html_parser.parse(html);
 
-    // Get title from h1
+    // Title from h1.font-bold
     final titleElement = document.querySelector('h1.font-bold');
     final title = titleElement?.text.trim() ?? 'Unknown';
 
-    // Get cover - look for the main manga image
-    final coverElement = document.querySelector('div.flex-shrink-0 img');
-    final coverUrl = coverElement?.attributes['data-src'] ??
-        coverElement?.attributes['src'];
+    // Cover image - look for img inside the flex-shrink-0 div
+    final coverElement = document.querySelector('div.flex-shrink-0 img[data-src]');
+    String? coverUrl = coverElement?.attributes['data-src'];
+    if (coverUrl == null || coverUrl.isEmpty) {
+      coverUrl = coverElement?.attributes['src'];
+    }
 
-    // Get description from the paragraph
+    // Description from p.text-sm.text--secondary
     final descElement = document.querySelector('p.text-sm.text--secondary');
     String? description = descElement?.text.trim();
-    // Clean up HTML entities
-    description = description?.replaceAll('<br/>', '\n').replaceAll(RegExp(r'<[^>]*>'), '');
+    if (description != null) {
+      description = description.replaceAll(RegExp(r'<br\s*/?>'), '\n');
+    }
 
-    // Get genres from the links
-    final genreElements = document.querySelectorAll('a.text-brand[href*="/search?genre="]');
+    // Genres from links
+    final genreElements = document.querySelectorAll('a[href*="/search?genre="]');
     final genres = genreElements
         .map((e) => e.text.trim())
         .where((g) => g.isNotEmpty)
         .toList();
 
-    // Get status, type, year from the info grid
+    // Status, Type, Year from grid labels
     String? status;
     String? type;
     String? year;
-    
-    final infoLabels = document.querySelectorAll('label.text-secondary');
-    for (final label in infoLabels) {
-      final labelText = label.text.trim().toLowerCase();
-      final valueElement = label.nextElementSibling;
-      if (valueElement == null) continue;
-      final value = valueElement.text.trim();
+
+    final gridDivs = document.querySelectorAll('div.grid > div');
+    for (final div in gridDivs) {
+      final label = div.querySelector('label');
+      if (label == null) continue;
       
+      final labelText = label.text.trim().toLowerCase();
+      final valueDiv = div.children.length > 1 ? div.children[1] : null;
+      final value = valueDiv?.text.trim() ?? '';
+
       if (labelText == 'status') {
         status = value;
       } else if (labelText == 'type') {
@@ -290,32 +280,33 @@ class MangaPillSource extends ReadableSource {
     );
   }
 
+  /// Parse chapters from manga page
+  /// Structure: #chapters a[href^="/chapters/"]
   List<SourceChapter> _parseChapters(String html) {
     final document = html_parser.parse(html);
     final chapters = <SourceChapter>[];
     final seen = <String>{};
 
-    // Find chapter links in the chapters section
-    // Structure: div#chapters a[href="/chapters/..."]
-    final chapterElements = document.querySelectorAll('#chapters a[href*="/chapters/"], div[data-filter-list] a[href*="/chapters/"]');
+    // Chapters are in div#chapters or div[data-filter-list]
+    final chapterLinks = document.querySelectorAll('a[href^="/chapters/"]');
 
-    for (final element in chapterElements) {
-      final href = element.attributes['href'] ?? '';
+    for (final link in chapterLinks) {
+      final href = link.attributes['href'] ?? '';
       if (!href.startsWith('/chapters/')) continue;
 
       // Extract chapter ID: /chapters/2-11179000/one-piece-chapter-1179 -> 2-11179000/one-piece-chapter-1179
-      final id = href.replaceFirst('/chapters/', '');
+      final id = href.substring(10); // Remove "/chapters/"
       if (id.isEmpty || seen.contains(id)) continue;
       seen.add(id);
 
-      // Get title/number from the link text
-      final titleText = element.text.trim();
-      String title = titleText;
+      // Get chapter text
+      final chapterText = link.text.trim();
+      String title = chapterText;
       double? number;
 
-      // Try to parse chapter number from text like "Chapter 1179"
-      final numMatch = RegExp(r'chapter\s*(\d+(?:\.\d+)?)', caseSensitive: false)
-          .firstMatch(titleText);
+      // Parse chapter number from text like "Chapter 1179"
+      final numMatch = RegExp(r'[Cc]hapter\s*(\d+(?:\.\d+)?)')
+          .firstMatch(chapterText);
       if (numMatch != null) {
         number = double.tryParse(numMatch.group(1)!);
       }
@@ -334,29 +325,28 @@ class MangaPillSource extends ReadableSource {
     return chapters;
   }
 
+  /// Parse pages from chapter page
+  /// Structure: chapter-page img[data-src]
   List<SourcePage> _parsePages(String html) {
     final document = html_parser.parse(html);
     final pages = <SourcePage>[];
     final seen = <String>{};
 
-    // Find page images inside chapter-page elements
-    // Structure: chapter-page > div > picture > img.js-page[data-src]
-    final pageImages = document.querySelectorAll('chapter-page img.js-page, chapter-page picture img');
+    // Images are inside chapter-page elements with class js-page
+    final pageImages = document.querySelectorAll('img[data-src]');
 
-    for (final element in pageImages) {
-      final imageUrl = element.attributes['data-src'] ??
-          element.attributes['src'] ??
-          '';
-
-      // Skip if empty or already seen
-      if (imageUrl.isEmpty || seen.contains(imageUrl)) continue;
+    for (final img in pageImages) {
+      final imageUrl = img.attributes['data-src'] ?? '';
       
-      // Only include actual manga page images (from CDN)
-      if (!imageUrl.contains('cdn.readdetectiveconan.com') && 
-          !imageUrl.contains('mangapill')) continue;
+      // Only include CDN images for manga pages
+      if (imageUrl.isEmpty || 
+          seen.contains(imageUrl) ||
+          !imageUrl.contains('cdn.readdetectiveconan.com/file/mangap')) {
+        continue;
+      }
       
       seen.add(imageUrl);
-      
+
       pages.add(SourcePage(
         index: pages.length,
         imageUrl: imageUrl,
