@@ -959,105 +959,119 @@ class _FilterSheet extends ConsumerWidget {
 }
 
 /// Entry action bottom sheet for managing library entries
-class _EntryActionSheet extends ConsumerWidget {
+class _EntryActionSheet extends ConsumerStatefulWidget {
   final LibraryEntry entry;
 
   const _EntryActionSheet({required this.entry});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[600],
-              borderRadius: BorderRadius.circular(2),
+  ConsumerState<_EntryActionSheet> createState() => _EntryActionSheetState();
+}
+
+class _EntryActionSheetState extends ConsumerState<_EntryActionSheet> {
+  int _readChapters = 0;
+  int _totalChapters = 0;
+  bool _isLoadingProgress = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReadProgress();
+  }
+
+  Future<void> _loadReadProgress() async {
+    final chapterRepo = ref.read(chapterRepositoryProvider);
+    final readChapters = await chapterRepo.getReadChapters(widget.entry.sourceId);
+    final allChapters = await chapterRepo.getAllChapters(widget.entry.sourceId);
+    
+    if (mounted) {
+      setState(() {
+        _readChapters = readChapters.length;
+        _totalChapters = allChapters.length;
+        _isLoadingProgress = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
+    
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              entry.title,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 16),
+            
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                entry.title,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Status change
-          ListTile(
-            leading: const Icon(Icons.flag),
-            title: const Text('Change Status'),
-            subtitle: Text(_getStatusLabel(entry.status)),
-            onTap: () {
-              Navigator.pop(context);
-              _showStatusPicker(context, ref);
-            },
-          ),
-          
-          // Toggle favorite
-          ListTile(
-            leading: Icon(
-              entry.isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: entry.isFavorite ? AppColors.error : null,
+            const SizedBox(height: 16),
+            
+            // Status change
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('Change Status'),
+              subtitle: Text(_getStatusLabel(entry.status)),
+              onTap: () {
+                Navigator.pop(context);
+                _showStatusPicker(context, ref);
+              },
             ),
-            title: Text(entry.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
-            onTap: () async {
-              final repo = ref.read(libraryRepositoryProvider);
-              final updatedEntry = entry..isFavorite = !entry.isFavorite;
-              await repo.updateEntry(updatedEntry);
-              ref.invalidate(libraryEntriesProvider);
-              if (context.mounted) Navigator.pop(context);
-            },
-          ),
-          
-          // Mark all as read
-          ListTile(
-            leading: const Icon(Icons.done_all),
-            title: const Text('Mark All as Read'),
-            onTap: () async {
-              final repo = ref.read(libraryRepositoryProvider);
-              final updatedEntry = entry
-                ..currentProgress = entry.totalCount ?? entry.currentProgress
-                ..status = MediaStatus.completed;
-              await repo.updateEntry(updatedEntry);
-              ref.invalidate(libraryEntriesProvider);
-              if (context.mounted) Navigator.pop(context);
-            },
-          ),
-          
-          // Edit progress
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Progress'),
-            subtitle: Text('${entry.currentProgress}/${entry.totalCount ?? '?'}'),
-            onTap: () {
-              Navigator.pop(context);
-              _showProgressEditor(context, ref);
-            },
-          ),
-          
-          const Divider(),
-          
-          // Remove from library
-          ListTile(
-            leading: const Icon(Icons.delete, color: AppColors.error),
-            title: const Text('Remove from Library', 
-              style: TextStyle(color: AppColors.error)),
-            onTap: () => _confirmRemove(context, ref),
-          ),
-        ],
+            
+            // Remove from Library (was "Remove from Favorites")
+            ListTile(
+              leading: const Icon(Icons.favorite, color: AppColors.error),
+              title: const Text('Remove from Favorites'),
+              subtitle: const Text('Removes from library'),
+              onTap: () => _confirmRemove(context, ref),
+            ),
+            
+            // Mark all as read
+            ListTile(
+              leading: const Icon(Icons.done_all),
+              title: const Text('Mark All as Read'),
+              onTap: () async {
+                final repo = ref.read(libraryRepositoryProvider);
+                final updatedEntry = entry
+                  ..currentProgress = entry.totalCount ?? entry.currentProgress
+                  ..status = MediaStatus.completed;
+                await repo.updateEntry(updatedEntry);
+                ref.invalidate(libraryEntriesProvider);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
+            
+            // View progress (read-only, synced with actual reading)
+            ListTile(
+              leading: const Icon(Icons.auto_stories),
+              title: const Text('Reading Progress'),
+              subtitle: _isLoadingProgress 
+                  ? const Text('Loading...')
+                  : Text('$_readChapters/$_totalChapters chapters read'),
+              enabled: false,  // Read-only display
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1084,63 +1098,42 @@ class _EntryActionSheet extends ConsumerWidget {
   void _showStatusPicker(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Change Status'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: MediaStatus.values.map((status) {
-            return RadioListTile<MediaStatus>(
-              title: Text(_getStatusLabel(status)),
-              value: status,
-              groupValue: entry.status,
-              onChanged: (value) async {
-                if (value != null) {
-                  final repo = ref.read(libraryRepositoryProvider);
-                  final updatedEntry = entry..status = value;
-                  await repo.updateEntry(updatedEntry);
-                  ref.invalidate(libraryEntriesProvider);
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  void _showProgressEditor(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController(
-      text: entry.currentProgress.toString(),
-    );
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Progress'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Current Progress',
-            suffixText: '/ ${entry.totalCount ?? '?'}',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: MediaStatus.values.map((status) {
+              return RadioListTile<MediaStatus>(
+                title: Text(_getStatusLabel(status)),
+                value: status,
+                groupValue: widget.entry.status,
+                onChanged: (value) async {
+                  if (value != null) {
+                    final repo = ref.read(libraryRepositoryProvider);
+                    widget.entry.status = value;
+                    await repo.updateEntry(widget.entry);
+                    ref.invalidate(libraryEntriesProvider);
+                    
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status changed to ${_getStatusLabel(value)}')),
+                      );
+                    }
+                  }
+                },
+              );
+            }).toList(),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final progress = int.tryParse(controller.text) ?? entry.currentProgress;
-              final repo = ref.read(libraryRepositoryProvider);
-              final updatedEntry = entry..currentProgress = progress;
-              await repo.updateEntry(updatedEntry);
-              ref.invalidate(libraryEntriesProvider);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Save'),
           ),
         ],
       ),
@@ -1150,12 +1143,13 @@ class _EntryActionSheet extends ConsumerWidget {
   void _confirmRemove(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Remove from Library?'),
-        content: Text('Are you sure you want to remove "${entry.title}" from your library?'),
+        content: Text('Are you sure you want to remove "${widget.entry.title}" from your library?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -1163,12 +1157,30 @@ class _EntryActionSheet extends ConsumerWidget {
               backgroundColor: AppColors.error,
             ),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               final repo = ref.read(libraryRepositoryProvider);
-              await repo.deleteEntry(entry.id);
+              
+              // Delete the entry
+              await repo.deleteEntry(widget.entry.id);
+              
+              // Refresh library
               ref.invalidate(libraryEntriesProvider);
+              
+              // Close dialog first
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+              }
+              
+              // Then close action sheet
               if (context.mounted) {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close action sheet
+                navigator.pop();
+              }
+              
+              // Show snackbar
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${widget.entry.title} removed from library')),
+                );
               }
             },
             child: const Text('Remove'),

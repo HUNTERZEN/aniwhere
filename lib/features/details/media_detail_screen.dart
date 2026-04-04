@@ -68,6 +68,18 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     final detailsAsync = ref.watch(mediaDetailsProvider((widget.source, widget.mediaId)));
     final chaptersAsync = ref.watch(chaptersProvider((widget.source, widget.mediaId)));
 
+    // Update totalCount when chapters are loaded
+    chaptersAsync.whenData((chapters) async {
+      if (chapters.isNotEmpty) {
+        final repo = ref.read(libraryRepositoryProvider);
+        final entry = await repo.getBySourceId('${widget.source.id}:${widget.mediaId}');
+        if (entry != null && entry.totalCount != chapters.length) {
+          entry.totalCount = chapters.length;
+          await repo.updateEntry(entry);
+        }
+      }
+    });
+
     // Use initial media while loading full details
     final media = detailsAsync.valueOrNull ?? widget.initialMedia;
 
