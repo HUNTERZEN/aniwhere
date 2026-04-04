@@ -2,8 +2,9 @@ import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
@@ -11,11 +12,35 @@ import '../../core/router/app_router.dart';
 import '../../data/models/app_settings.dart';
 
 /// Settings screen for app configuration
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = 'Loading...';
+  String _buildNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppInfo();
+  }
+
+  Future<void> _loadAppInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = packageInfo.version;
+        _buildNumber = packageInfo.buildNumber;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeNotifierProvider);
     final settingsAsync = ref.watch(settingsProvider);
 
@@ -290,22 +315,66 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'About',
                 children: [
                   _SettingsTile(
-                    icon: Icons.info,
-                    title: 'Version',
-                    subtitle: '1.0.0',
-                    onTap: () {},
+                    icon: Icons.info_outline,
+                    title: 'App Version',
+                    subtitle: _buildNumber.isNotEmpty 
+                        ? 'v$_appVersion (Build $_buildNumber)'
+                        : 'v$_appVersion',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary, width: 1),
+                      ),
+                      child: Text(
+                        'v$_appVersion',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      showAboutDialog(
+                        context: context,
+                        applicationName: 'Aniwhere',
+                        applicationVersion: 'v$_appVersion (Build $_buildNumber)',
+                        applicationIcon: const Icon(Icons.play_circle_outline, size: 48, color: AppColors.primary),
+                        applicationLegalese: '© 2026 Aniwhere\nWatch and read anime, manga, anywhere.',
+                      );
+                    },
                   ),
                   _SettingsTile(
                     icon: Icons.code,
                     title: 'Source Code',
-                    subtitle: 'View on GitHub',
-                    onTap: () {},
+                    subtitle: 'github.com/HUNTERZEN/aniwhere',
+                    trailing: const Icon(Icons.open_in_new, size: 20),
+                    onTap: () async {
+                      final url = Uri.parse('https://github.com/HUNTERZEN/aniwhere.git');
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not open GitHub')),
+                          );
+                        }
+                      }
+                    },
                   ),
                   _SettingsTile(
                     icon: Icons.description,
-                    title: 'Licenses',
-                    subtitle: 'Open source licenses',
-                    onTap: () => showLicensePage(context: context),
+                    title: 'Open Source Licenses',
+                    subtitle: 'View third-party licenses',
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: () => showLicensePage(
+                      context: context,
+                      applicationName: 'Aniwhere',
+                      applicationVersion: 'v$_appVersion',
+                      applicationIcon: const Icon(Icons.play_circle_outline, size: 48, color: AppColors.primary),
+                    ),
                   ),
                 ],
               ),
@@ -596,12 +665,14 @@ class _SettingsTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   const _SettingsTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -618,7 +689,7 @@ class _SettingsTile extends StatelessWidget {
       ),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: trailing ?? const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
