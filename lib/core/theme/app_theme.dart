@@ -1,97 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'app_colors.dart';
 
 /// Theme configuration for Aniwhere
-/// Follows Material 3 design guidelines
+/// Follows Material 3 design guidelines with Material You dynamic colors
 class AppTheme {
   AppTheme._();
 
+  // Default purple color scheme (fallback when dynamic colors unavailable)
+  static const _defaultSeedColor = AppColors.primary;
+
   // Dark Theme (Default)
-  static ThemeData get darkTheme {
+  static ThemeData darkTheme([ColorScheme? dynamicScheme]) {
+    final colorScheme = dynamicScheme?.harmonized() ??
+        ColorScheme.fromSeed(
+          seedColor: _defaultSeedColor,
+          brightness: Brightness.dark,
+        );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        primaryContainer: AppColors.primaryDark,
-        secondary: AppColors.accent,
-        secondaryContainer: AppColors.accentDark,
-        surface: AppColors.surfaceDark,
-        error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
-        onSurface: AppColors.textPrimaryDark,
-        onError: Colors.white,
-      ),
-      scaffoldBackgroundColor: AppColors.bgDark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
       // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimaryDark,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryDark,
+          color: colorScheme.onSurface,
         ),
       ),
       // Card Theme
       cardTheme: CardThemeData(
-        color: AppColors.cardDark,
+        color: colorScheme.surfaceContainerHighest,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
       // Bottom Navigation Theme
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondaryDark,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colorScheme.surface,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       // Navigation Bar Theme (Material 3)
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
-        indicatorColor: AppColors.primary.withOpacity(0.2),
+        backgroundColor: colorScheme.surface,
+        indicatorColor: colorScheme.primaryContainer,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: colorScheme.primary,
             );
           }
           return GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: AppColors.textSecondaryDark,
+            color: colorScheme.onSurfaceVariant,
           );
         }),
       ),
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.cardDark,
+        fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.inter(color: AppColors.textTertiaryDark),
+        hintStyle: GoogleFonts.inter(color: colorScheme.onSurfaceVariant),
       ),
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -106,7 +105,7 @@ class AppTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -114,22 +113,22 @@ class AppTheme {
         ),
       ),
       // Icon Theme
-      iconTheme: const IconThemeData(
-        color: AppColors.textSecondaryDark,
+      iconTheme: IconThemeData(
+        color: colorScheme.onSurfaceVariant,
         size: 24,
       ),
       // Text Theme
-      textTheme: _buildTextTheme(isDark: true),
+      textTheme: _buildTextTheme(colorScheme: colorScheme),
       // Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.borderDark,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
         thickness: 1,
         space: 1,
       ),
       // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.cardDark,
-        selectedColor: AppColors.primary,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primaryContainer,
         labelStyle: GoogleFonts.inter(fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -139,90 +138,85 @@ class AppTheme {
   }
 
   // Light Theme
-  static ThemeData get lightTheme {
+  static ThemeData lightTheme([ColorScheme? dynamicScheme]) {
+    final colorScheme = dynamicScheme?.harmonized() ??
+        ColorScheme.fromSeed(
+          seedColor: _defaultSeedColor,
+          brightness: Brightness.light,
+        );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        primaryContainer: AppColors.primaryLight,
-        secondary: AppColors.accent,
-        secondaryContainer: AppColors.accentLight,
-        surface: AppColors.surfaceLight,
-        error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.black,
-        onSurface: AppColors.textPrimaryLight,
-        onError: Colors.white,
-      ),
-      scaffoldBackgroundColor: AppColors.bgLight,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
       // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.bgLight,
-        foregroundColor: AppColors.textPrimaryLight,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryLight,
+          color: colorScheme.onSurface,
         ),
       ),
       // Card Theme
       cardTheme: CardThemeData(
-        color: AppColors.cardLight,
+        color: colorScheme.surfaceContainerHighest,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
       // Bottom Navigation Theme
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surfaceLight,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondaryLight,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colorScheme.surface,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       // Navigation Bar Theme (Material 3)
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surfaceLight,
-        indicatorColor: AppColors.primary.withOpacity(0.2),
+        backgroundColor: colorScheme.surface,
+        indicatorColor: colorScheme.primaryContainer,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: colorScheme.primary,
             );
           }
           return GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: AppColors.textSecondaryLight,
+            color: colorScheme.onSurfaceVariant,
           );
         }),
       ),
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.cardLight,
+        fillColor: colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.inter(color: AppColors.textTertiaryLight),
+        hintStyle: GoogleFonts.inter(color: colorScheme.onSurfaceVariant),
       ),
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -237,7 +231,7 @@ class AppTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -245,22 +239,22 @@ class AppTheme {
         ),
       ),
       // Icon Theme
-      iconTheme: const IconThemeData(
-        color: AppColors.textSecondaryLight,
+      iconTheme: IconThemeData(
+        color: colorScheme.onSurfaceVariant,
         size: 24,
       ),
       // Text Theme
-      textTheme: _buildTextTheme(isDark: false),
+      textTheme: _buildTextTheme(colorScheme: colorScheme),
       // Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.borderLight,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
         thickness: 1,
         space: 1,
       ),
       // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.cardLight,
-        selectedColor: AppColors.primary,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primaryContainer,
         labelStyle: GoogleFonts.inter(fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -270,11 +264,9 @@ class AppTheme {
   }
 
   // Build Text Theme
-  static TextTheme _buildTextTheme({required bool isDark}) {
-    final Color primaryColor =
-        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final Color secondaryColor =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+  static TextTheme _buildTextTheme({required ColorScheme colorScheme}) {
+    final Color primaryColor = colorScheme.onSurface;
+    final Color secondaryColor = colorScheme.onSurfaceVariant;
 
     return TextTheme(
       // Display styles (Poppins for headings)

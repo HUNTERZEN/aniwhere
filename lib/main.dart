@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' as material show ThemeMode;
 import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 // import 'package:media_kit/media_kit.dart'; // Uncomment when media_kit is enabled
 
 import 'core/theme/app_theme.dart';
@@ -48,15 +49,19 @@ class AniwhereApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeNotifierProvider);
 
-    return MaterialApp.router(
-      title: 'Aniwhere',
-      debugShowCheckedModeBanner: false,
-      // Theme configuration
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _mapThemeMode(themeMode),
-      // Router configuration
-      routerConfig: AppRouter.router,
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        return MaterialApp.router(
+          title: 'Aniwhere',
+          debugShowCheckedModeBanner: false,
+          // Theme configuration with Material You dynamic colors
+          theme: AppTheme.lightTheme(lightDynamic),
+          darkTheme: AppTheme.darkTheme(darkDynamic),
+          themeMode: _mapThemeMode(themeMode),
+          // Router configuration
+          routerConfig: AppRouter.router,
+        );
+      },
     );
   }
 
