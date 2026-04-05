@@ -22,7 +22,7 @@ class AppRouter {
   // Navigation keys for nested navigation
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'root');
-  static final GlobalKey<NavigatorState> _shellNavigatorKey =
+  static final GlobalKey<NavigatorState> shellNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'shell');
 
   // Route paths
@@ -44,7 +44,7 @@ class AppRouter {
     routes: [
       // Shell route for bottom navigation
       ShellRoute(
-        navigatorKey: _shellNavigatorKey,
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => HomeScreen(child: child),
         routes: [
           GoRoute(

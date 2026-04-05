@@ -57,6 +57,12 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _onItemTapped(BuildContext context, int index) {
+    // Close any open bottom sheets or dialogs on the shell navigator
+    final shellNavigator = AppRouter.shellNavigatorKey.currentState;
+    if (shellNavigator != null && shellNavigator.canPop()) {
+      shellNavigator.pop();
+    }
+
     switch (index) {
       case 0:
         context.go(AppRouter.home);

@@ -29,6 +29,16 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surface,
+      // Bottom Sheet Theme
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+      ),
+      // Dialog Theme
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+      ),
       // AppBar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.surface,
