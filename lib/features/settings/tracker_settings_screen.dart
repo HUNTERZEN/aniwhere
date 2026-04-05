@@ -72,18 +72,7 @@ class _TrackerListTileState extends ConsumerState<_TrackerListTile> {
     final isLoggedIn = widget.tracker.isLoggedIn;
     
     return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        clipBehavior: Clip.antiAlias,
-        // Since we don't have the actual assets, safely fallback to an icon
-        child: const Icon(Icons.sync_alt), 
-      ),
-      title: Text(widget.tracker.name),
+      leading: const Icon(Icons.sync_alt),      title: Text(widget.tracker.name),
       subtitle: isLoggedIn 
           ? Text('Logged in as ${widget.tracker.username ?? 'Unknown'}')
           : const Text('Not logged in'),

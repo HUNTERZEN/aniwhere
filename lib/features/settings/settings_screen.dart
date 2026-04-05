@@ -678,15 +678,7 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: AppColors.primary),
-      ),
+      leading: Icon(icon),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: trailing ?? const Icon(Icons.chevron_right),
@@ -712,15 +704,7 @@ class _SwitchSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: AppColors.primary),
-      ),
+      leading: Icon(icon),
       title: Text(title),
       trailing: Switch(
         value: value,

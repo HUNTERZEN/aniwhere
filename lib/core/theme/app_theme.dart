@@ -13,11 +13,16 @@ class AppTheme {
 
   // Dark Theme (Default)
   static ThemeData darkTheme([ColorScheme? dynamicScheme]) {
-    final colorScheme = dynamicScheme?.harmonized() ??
+    final baseScheme = dynamicScheme?.harmonized() ??
         ColorScheme.fromSeed(
           seedColor: _defaultSeedColor,
           brightness: Brightness.dark,
         );
+
+    // Make surface pitch black for dark mode
+    final colorScheme = baseScheme.copyWith(
+      surface: Colors.black,
+    );
 
     return ThemeData(
       useMaterial3: true,
