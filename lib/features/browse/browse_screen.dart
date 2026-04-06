@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/sources/source.dart';
 import '../../data/sources/source_registry.dart';
-import 'source_browse_screen.dart';
+import '../extensions/extension_manager_screen.dart';
 
 /// Browse screen for discovering new manga/anime from sources
 class BrowseScreen extends ConsumerWidget {
@@ -55,20 +55,10 @@ class BrowseScreen extends ConsumerWidget {
   }
 
   void _showExtensionInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Extensions'),
-        content: const Text(
-          'Custom JavaScript extensions will be available in a future update.\n\n'
-          'For now, enjoy the built-in MangaDex and Gogoanime sources!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ExtensionManagerScreen(),
       ),
     );
   }

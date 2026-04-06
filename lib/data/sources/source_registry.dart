@@ -5,12 +5,17 @@ import 'mangadex_source.dart';
 import 'mangapill_source.dart';
 import 'gogoanime_source.dart';
 import 'aniwatch_source.dart';
+import '../extensions/extension_model.dart';
+import '../extensions/extension_source.dart';
+import '../extensions/extension_repository.dart';
 
 /// Registry of all available sources
 class SourceRegistry {
   final Map<String, Source> _sources = {};
+  final Map<String, ExtensionSource> _extensionSources = {};
+  final ExtensionRepository _extensionRepo;
 
-  SourceRegistry() {
+  SourceRegistry(this._extensionRepo) {
     // Register built-in sources
     _registerBuiltInSources();
   }
@@ -29,14 +34,39 @@ class SourceRegistry {
     register(GogoanimeSource());
   }
 
+  /// Load extensions from storage
+  Future<void> loadExtensions() async {
+    final extensions = await _extensionRepo.getInstalledExtensions();
+    for (final ext in extensions) {
+      if (ext.isEnabled) {
+        await registerExtension(ext);
+      }
+    }
+  }
+
   /// Register a new source
   void register(Source source) {
     _sources[source.id] = source;
   }
 
+  /// Register an extension source
+  Future<void> registerExtension(LoadedExtension extension) async {
+    final source = ExtensionSource(extension);
+    try {
+      await source.initialize();
+      _extensionSources[extension.metadata.id] = source;
+      _sources[extension.metadata.id] = source;
+    } catch (e) {
+      // Extension failed to load, skip it
+      source.dispose();
+    }
+  }
+
   /// Unregister a source
   void unregister(String sourceId) {
     _sources.remove(sourceId);
+    final extSource = _extensionSources.remove(sourceId);
+    extSource?.dispose();
   }
 
   /// Get a source by ID
@@ -58,11 +88,28 @@ class SourceRegistry {
 
   /// Get novel sources
   List<Source> get novelSources => getSourcesByType(SourceContentType.novel);
+
+  /// Get built-in sources only
+  List<Source> get builtInSources {
+    return _sources.values
+        .where((s) => !_extensionSources.containsKey(s.id))
+        .toList();
+  }
+
+  /// Get extension sources only
+  List<ExtensionSource> get extensionSources => _extensionSources.values.toList();
+
+  /// Check if source is an extension
+  bool isExtension(String sourceId) => _extensionSources.containsKey(sourceId);
 }
 
 /// Provider for the source registry
 final sourceRegistryProvider = Provider<SourceRegistry>((ref) {
-  return SourceRegistry();
+  final extensionRepo = ref.watch(extensionRepositoryProvider);
+  final registry = SourceRegistry(extensionRepo);
+  // Load extensions asynchronously
+  registry.loadExtensions();
+  return registry;
 });
 
 /// Provider for all sources
