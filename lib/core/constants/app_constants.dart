@@ -9,7 +9,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API Endpoints
-  static const String mangaDexBaseUrl = 'https://api.mangadex.org';
+  static const String mangaPillBaseUrl = 'https://mangapill.com';
   static const String aniListBaseUrl = 'https://graphql.anilist.co';
   static const String malBaseUrl = 'https://api.myanimelist.net/v2';
   static const String kitsuBaseUrl = 'https://kitsu.io/api/edge';

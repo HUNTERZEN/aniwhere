@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'source.dart';
-import 'mangadex_source.dart';
 import 'mangapill_source.dart';
-import 'gogoanime_source.dart';
 import 'aniwatch_source.dart';
 import '../extensions/extension_model.dart';
 import '../extensions/extension_source.dart';
@@ -21,17 +19,11 @@ class SourceRegistry {
   }
 
   void _registerBuiltInSources() {
-    // MangaDex - Manga source (English translations)
-    register(MangaDexSource());
-    
-    // MangaPill - Manga source (English)
+    // MangaPill - Default manga source (English)
     register(MangaPillSource());
     
-    // Aniwatch - Anime source with English subtitles (primary)
+    // Aniwatch - Default anime source with English subtitles
     register(AniwatchSource());
-    
-    // Gogoanime - Anime source (fallback)
-    register(GogoanimeSource());
   }
 
   /// Load extensions from storage
@@ -130,4 +122,16 @@ final animeSourcesProvider = Provider<List<Source>>((ref) {
 /// Provider for a specific source by ID
 final sourceByIdProvider = Provider.family<Source?, String>((ref, id) {
   return ref.watch(sourceRegistryProvider).getSource(id);
+});
+
+/// Provider for default manga source (MangaPill)
+final defaultMangaSourceProvider = Provider<Source?>((ref) {
+  final sources = ref.watch(mangaSourcesProvider);
+  return sources.isNotEmpty ? sources.first : null;
+});
+
+/// Provider for default anime source (AniWatch)
+final defaultAnimeSourceProvider = Provider<Source?>((ref) {
+  final sources = ref.watch(animeSourcesProvider);
+  return sources.isNotEmpty ? sources.first : null;
 });
