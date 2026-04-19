@@ -497,7 +497,7 @@ class _ChapterTile extends StatelessWidget {
 
   void _openContent(BuildContext context) {
     if (source.contentType == SourceContentType.anime) {
-      // Navigate to the player with full episode context
+      // Navigate to the WebView player for anime (streaming servers need JS)
       final params = PlayerParams(
         source: source,
         mediaId: mediaId,
@@ -507,7 +507,7 @@ class _ChapterTile extends StatelessWidget {
       );
       final encodedId = Uri.encodeComponent(chapter.id);
       context.push(
-        AppRouter.player.replaceFirst(':id', encodedId),
+        AppRouter.webviewPlayer.replaceFirst(':id', encodedId),
         extra: params,
       );
     } else {

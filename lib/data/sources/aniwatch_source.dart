@@ -1,23 +1,25 @@
 import 'package:dio/dio.dart';
+import 'package:html/parser.dart' as html_parser;
 
 import 'source.dart';
-import 'database_service.dart';
-import '../models/app_settings.dart';
 
-/// Anime source using Jikan API for metadata + Consumet API for streaming
-/// Jikan provides anime info (MyAnimeList data)
-/// Consumet provides actual video streams (via gogoanime provider)
+/// Anime source using Jikan API for metadata + direct GogoAnime scraping for episodes/streaming
+/// Jikan provides anime info (MyAnimeList data) — browsing, search, details
+/// GogoAnime provides episode lists and video embed URLs for playback
 class AniwatchSource extends WatchableSource {
   final Dio _jikanDio;
-  final Dio _consumetDio;
+  final Dio _gogoDio;
 
   static const String _jikanApi = 'https://api.jikan.moe/v4';
-  static const String _defaultConsumetApi =
-      'https://consumet-api-clone.vercel.app/anime/gogoanime';
+
+  /// GogoAnime base URL — may need updating if domain changes
+  static const String _gogoBase = 'https://www14.gogoanimes.fi';
 
   /// Cache of anime titles keyed by MAL ID, populated when getDetails() is called
-  /// so getChapters() doesn't need to make another Jikan request.
   final Map<String, _CachedAnimeTitle> _titleCache = {};
+
+  /// Cache of GogoAnime slugs keyed by anime title (to avoid repeated searches)
+  final Map<String, String?> _gogoSlugCache = {};
 
   AniwatchSource()
       : _jikanDio = Dio(BaseOptions(
@@ -29,34 +31,18 @@ class AniwatchSource extends WatchableSource {
             'Accept': 'application/json',
           },
         )),
-        _consumetDio = Dio(BaseOptions(
-          baseUrl: _defaultConsumetApi,
+        _gogoDio = Dio(BaseOptions(
+          baseUrl: _gogoBase,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept':
+                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+          },
         ));
-
-  /// Update Consumet API URL from user settings
-  Future<void> _updateConsumetSettings() async {
-    try {
-      final isar = await DatabaseService.instance;
-      final settings = await isar.appSettings.get(0);
-      if (settings != null && settings.consumetApiUrl.isNotEmpty) {
-        _consumetDio.options.baseUrl = settings.consumetApiUrl;
-      }
-    } catch (e) {
-      // Fallback to default
-    }
-  }
-
-  Future<AnimeAudioPreference> _getAudioPreference() async {
-    try {
-      final isar = await DatabaseService.instance;
-      final settings = await isar.appSettings.get(0);
-      return settings?.animeAudioPreference ?? AnimeAudioPreference.sub;
-    } catch (e) {
-      return AnimeAudioPreference.sub;
-    }
-  }
 
   /// Make a Jikan API request with automatic retry on rate limit (429) or DNS errors
   Future<Response> _jikanGet(String path,
@@ -66,8 +52,8 @@ class AniwatchSource extends WatchableSource {
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
         if (attempt > 0) {
-          // Wait progressively longer between retries
-          await Future.delayed(Duration(milliseconds: 1000 + (attempt * 1500)));
+          await Future.delayed(
+              Duration(milliseconds: 1000 + (attempt * 1500)));
         }
         return await _jikanDio.get(path, queryParameters: queryParameters);
       } on DioException catch (e) {
@@ -77,7 +63,6 @@ class AniwatchSource extends WatchableSource {
                 e.type == DioExceptionType.connectionTimeout;
 
         if ((isRateLimit || isConnectionError) && attempt < maxRetries - 1) {
-          // Rate limited or DNS temp failure — wait and retry
           await Future.delayed(
               Duration(milliseconds: 2000 + (attempt * 2000)));
           continue;
@@ -233,8 +218,7 @@ class AniwatchSource extends WatchableSource {
       final response = await _jikanGet('$_jikanApi/anime/$id/full');
       final data = response.data['data'];
 
-      // Cache the titles so getChapters() can reuse them without
-      // making another Jikan request
+      // Cache the titles so getChapters() can reuse them
       _titleCache[id] = _CachedAnimeTitle(
         title: data['title'] as String? ?? '',
         titleEnglish: data['title_english'] as String?,
@@ -247,16 +231,12 @@ class AniwatchSource extends WatchableSource {
   }
 
   // ========================================================================
-  // Episodes: Use cached title → Consumet search → Consumet episodes
-  // Falls back to Jikan episodes if Consumet unavailable
+  // Episodes via direct GogoAnime scraping
   // ========================================================================
 
   @override
   Future<List<SourceChapter>> getChapters(String mediaId) async {
-    await _updateConsumetSettings();
-
     // Step 1: Get anime title from cache (populated by getDetails())
-    // If not cached, fetch minimally from Jikan
     String animeTitle = '';
     String? animeTitleEnglish;
 
@@ -265,55 +245,43 @@ class AniwatchSource extends WatchableSource {
       animeTitle = cached.title;
       animeTitleEnglish = cached.titleEnglish;
     } else {
-      // Need to fetch — add a delay to avoid rate limiting since getDetails()
-      // likely just ran
+      // Need to fetch from Jikan
       await Future.delayed(const Duration(milliseconds: 1500));
       try {
-        final detailsResponse =
-            await _jikanGet('$_jikanApi/anime/$mediaId');
+        final detailsResponse = await _jikanGet('$_jikanApi/anime/$mediaId');
         final animeData = detailsResponse.data['data'];
         animeTitle = animeData['title'] as String? ?? '';
         animeTitleEnglish = animeData['title_english'] as String?;
 
-        // Cache for future use
         _titleCache[mediaId] = _CachedAnimeTitle(
           title: animeTitle,
           titleEnglish: animeTitleEnglish,
         );
       } catch (e) {
-        // If even this fails, we can't search Consumet by title
-        // Fall through to Jikan episode list
+        // If even this fails, fall back to Jikan episode list
       }
     }
 
-    // Step 2: Search Consumet for this anime to get the Consumet anime ID
+    // Step 2: Search GogoAnime for this anime and get episode list
     if (animeTitle.isNotEmpty) {
-      String? consumetAnimeId;
       try {
-        consumetAnimeId = await _findConsumetAnimeId(
+        final gogoSlug = await _findGogoAnimeSlug(
           animeTitle,
           animeTitleEnglish,
         );
-      } catch (e) {
-        // If Consumet search fails, fall back to Jikan episode list
-      }
 
-      // Step 3: If we found the Consumet anime, get episodes from Consumet
-      if (consumetAnimeId != null) {
-        try {
-          final consumetEpisodes =
-              await _getConsumetEpisodes(consumetAnimeId);
-          if (consumetEpisodes.isNotEmpty) {
-            return consumetEpisodes;
+        if (gogoSlug != null) {
+          final episodes = await _scrapeGogoEpisodes(gogoSlug);
+          if (episodes.isNotEmpty) {
+            return episodes;
           }
-        } catch (e) {
-          // Fall through to Jikan episodes
         }
+      } catch (e) {
+        // Fall through to Jikan episodes
       }
     }
 
-    // Fallback: Use Jikan episodes (won't be playable via Consumet,
-    // but shows the list)
+    // Fallback: Use Jikan episodes (won't have GogoAnime embed URLs)
     await Future.delayed(const Duration(milliseconds: 1000));
     try {
       final response = await _jikanGet(
@@ -331,7 +299,7 @@ class AniwatchSource extends WatchableSource {
         episodes.add(_parseJikanEpisode(ep));
       }
 
-      // Fetch additional pages with increased delays to respect rate limits
+      // Fetch additional pages
       for (int page = 2; page <= lastPage && page <= 5; page++) {
         await Future.delayed(const Duration(milliseconds: 1000));
         try {
@@ -344,7 +312,6 @@ class AniwatchSource extends WatchableSource {
             episodes.add(_parseJikanEpisode(ep));
           }
         } catch (e) {
-          // Stop paginating on error
           break;
         }
       }
@@ -357,46 +324,85 @@ class AniwatchSource extends WatchableSource {
   }
 
   // ========================================================================
-  // Video Streaming via Consumet API
+  // Video Streaming: extract embed URLs from GogoAnime episode pages
   // ========================================================================
 
   @override
   Future<List<SourceVideo>> getVideoStreams(String episodeId) async {
-    await _updateConsumetSettings();
-
     try {
-      final response = await _consumetDio.get('/watch/$episodeId');
-      final sources = response.data['sources'] as List? ?? [];
+      // episodeId is a GogoAnime episode slug like "one-piece-episode-1"
+      final response = await _gogoDio.get('/$episodeId');
+      final html = response.data as String;
+      final document = html_parser.parse(html);
 
-      if (sources.isEmpty) {
-        throw Exception('No streams found for this episode');
+      final videos = <SourceVideo>[];
+
+      // Extract data-video attributes from streaming server links
+      final serverLinks = document.querySelectorAll('a[data-video]');
+      for (final link in serverLinks) {
+        final embedUrl = link.attributes['data-video'];
+        if (embedUrl == null || embedUrl.isEmpty) continue;
+
+        // Get server name from link text or class
+        final serverName =
+            link.text.trim().isNotEmpty ? link.text.trim() : 'Server';
+
+        // Build full URL if relative
+        String fullUrl = embedUrl;
+        if (fullUrl.startsWith('//')) {
+          fullUrl = 'https:$fullUrl';
+        }
+
+        videos.add(SourceVideo(
+          url: fullUrl,
+          quality: serverName,
+          embedUrl: fullUrl,
+          useWebView: true,
+          isM3U8: false,
+        ));
       }
 
-      return sources
-          .map((s) => SourceVideo(
-                url: s['url'] as String,
-                quality: s['quality'] as String? ?? 'default',
-                isM3U8: s['isM3U8'] as bool? ?? true,
-              ))
-          .toList();
+      // Also check for iframe src as fallback
+      if (videos.isEmpty) {
+        final iframes = document.querySelectorAll('iframe[src]');
+        for (final iframe in iframes) {
+          final src = iframe.attributes['src'];
+          if (src != null && src.isNotEmpty) {
+            String fullUrl = src;
+            if (fullUrl.startsWith('//')) {
+              fullUrl = 'https:$fullUrl';
+            }
+            videos.add(SourceVideo(
+              url: fullUrl,
+              quality: 'Default',
+              embedUrl: fullUrl,
+              useWebView: true,
+              isM3U8: false,
+            ));
+          }
+        }
+      }
+
+      if (videos.isEmpty) {
+        throw Exception('No video sources found for this episode');
+      }
+
+      return videos;
     } catch (e) {
-      throw Exception(
-          'Failed to fetch video streams: $e\n\nMake sure your Consumet API URL is correct in Settings → API Configuration.');
+      throw Exception('Failed to fetch video streams: $e');
     }
   }
 
   // ========================================================================
-  // Consumet Helper Methods
+  // GogoAnime Scraping Helpers
   // ========================================================================
 
-  /// Search Consumet API for an anime by title, returns the Consumet anime ID
-  Future<String?> _findConsumetAnimeId(
+  /// Search GogoAnime for an anime by title, returns the slug (e.g. "one-piece")
+  Future<String?> _findGogoAnimeSlug(
     String title,
     String? titleEnglish,
   ) async {
-    final audioPref = await _getAudioPreference();
-
-    // Try English title first (usually better match on Gogoanime), then Japanese
+    // Try English title first, then Japanese/romaji title
     final searchTitles = <String>[];
     if (titleEnglish != null && titleEnglish.isNotEmpty) {
       searchTitles.add(titleEnglish);
@@ -406,32 +412,64 @@ class AniwatchSource extends WatchableSource {
     }
 
     for (final searchTitle in searchTitles) {
-      final query = audioPref == AnimeAudioPreference.dub
-          ? '$searchTitle dub'
-          : searchTitle;
+      // Check cache first
+      if (_gogoSlugCache.containsKey(searchTitle.toLowerCase())) {
+        return _gogoSlugCache[searchTitle.toLowerCase()];
+      }
 
       try {
-        final response = await _consumetDio.get('/$query');
-        final results = response.data['results'] as List? ?? [];
+        final response = await _gogoDio.get('/search.html', queryParameters: {
+          'keyword': searchTitle,
+        });
 
-        if (results.isNotEmpty) {
-          // Try to find an exact or close match
-          for (final result in results) {
-            final resultTitle =
-                (result['title'] as String?)?.toLowerCase() ?? '';
-            final searchLower = searchTitle.toLowerCase();
+        final html = response.data as String;
+        final document = html_parser.parse(html);
+
+        // Find category links in search results
+        final categoryLinks =
+            document.querySelectorAll('a[href*="/category/"]');
+
+        if (categoryLinks.isNotEmpty) {
+          // Try to find the best match
+          String? bestSlug;
+          final searchLower = searchTitle.toLowerCase();
+
+          for (final link in categoryLinks) {
+            final href = link.attributes['href'] ?? '';
+            if (!href.contains('/category/')) continue;
+
+            final slug = href.split('/category/').last.trim();
+            if (slug.isEmpty) continue;
+
+            // Get title text
+            final linkTitle =
+                link.querySelector('.name')?.text.trim() ??
+                    link.text.trim();
+            final titleLower = linkTitle.toLowerCase();
 
             // Exact match
-            if (resultTitle == searchLower) {
-              return result['id'] as String?;
+            if (titleLower == searchLower) {
+              bestSlug = slug;
+              break;
+            }
+
+            // Partial match — prefer non-dub versions
+            if (bestSlug == null && !slug.endsWith('-dub')) {
+              bestSlug = slug;
             }
           }
 
-          // If no exact match, return the first result
-          return results.first['id'] as String?;
+          bestSlug ??= categoryLinks.first.attributes['href']
+              ?.split('/category/')
+              .last
+              .trim();
+
+          if (bestSlug != null && bestSlug.isNotEmpty) {
+            _gogoSlugCache[searchTitle.toLowerCase()] = bestSlug;
+            return bestSlug;
+          }
         }
       } catch (e) {
-        // Try next title variant
         continue;
       }
     }
@@ -439,22 +477,107 @@ class AniwatchSource extends WatchableSource {
     return null;
   }
 
-  /// Get episode list from Consumet (these have playable IDs)
-  Future<List<SourceChapter>> _getConsumetEpisodes(
-      String consumetAnimeId) async {
-    final response = await _consumetDio.get('/info/$consumetAnimeId');
-    final episodes = response.data['episodes'] as List? ?? [];
+  /// Scrape episode list from a GogoAnime category page
+  Future<List<SourceChapter>> _scrapeGogoEpisodes(String slug) async {
+    final response = await _gogoDio.get('/category/$slug');
+    final html = response.data as String;
+    final document = html_parser.parse(html);
 
-    return episodes.map((ep) {
-      final number = ep['number'];
-      return SourceChapter(
-        id: ep['id']
-            as String, // This is the Consumet episode ID used for streaming
-        title: 'Episode ${number ?? '?'}',
-        number: number != null ? (number as num).toDouble() : null,
-        url: ep['url'] as String?,
-      );
-    }).toList();
+    final episodes = <SourceChapter>[];
+    final seen = <String>{};
+
+    // Episodes are in #episode_related list or loaded inline in the category
+    final episodeLinks = document.querySelectorAll(
+        '#episode_related a[href], ul#episode_related a');
+
+    for (final link in episodeLinks) {
+      final href = (link.attributes['href'] ?? '').trim();
+      if (href.isEmpty) continue;
+
+      // Clean the href — remove leading slash and spaces
+      String episodeSlug = href.replaceAll(RegExp(r'^\s*/'), '');
+      if (episodeSlug.isEmpty || seen.contains(episodeSlug)) continue;
+      seen.add(episodeSlug);
+
+      // Extract episode number from the slug
+      final numMatch =
+          RegExp(r'episode-(\d+(?:\.\d+)?)').firstMatch(episodeSlug);
+      final number = numMatch != null
+          ? double.tryParse(numMatch.group(1)!)
+          : null;
+
+      // Get episode sub/dub type
+      final cate = link.querySelector('.cate')?.text.trim() ?? '';
+      final suffix = cate.isNotEmpty ? ' ($cate)' : '';
+
+      episodes.add(SourceChapter(
+        id: episodeSlug, // This is used as episodeId for getVideoStreams
+        title: 'Episode ${number?.toInt() ?? '?'}$suffix',
+        number: number,
+      ));
+    }
+
+    // If no episodes found in the HTML, try the AJAX endpoint
+    if (episodes.isEmpty) {
+      // Get movie_id from the page
+      final movieIdInput = document.querySelector('#movie_id');
+      final movieId = movieIdInput?.attributes['value'];
+
+      if (movieId != null && movieId.isNotEmpty) {
+        try {
+          final ajaxResponse = await _gogoDio.get(
+            '/ajax/load-list-episode',
+            queryParameters: {
+              'ep_start': 0,
+              'ep_end': 9999,
+              'id': movieId,
+            },
+          );
+
+          final ajaxHtml = ajaxResponse.data as String;
+          final ajaxDoc = html_parser.parse(ajaxHtml);
+          final ajaxLinks = ajaxDoc.querySelectorAll('a[href]');
+
+          for (final link in ajaxLinks) {
+            final href = (link.attributes['href'] ?? '').trim();
+            if (href.isEmpty) continue;
+
+            String episodeSlug = href.replaceAll(RegExp(r'^\s*/'), '');
+
+            // Fix episode links that might be missing the anime slug
+            // e.g. "-episode-5" -> "slug-episode-5"
+            if (episodeSlug.startsWith('-episode-') ||
+                episodeSlug.startsWith('episode-')) {
+              episodeSlug = '$slug-$episodeSlug'.replaceAll('--', '-');
+            }
+
+            if (episodeSlug.isEmpty || seen.contains(episodeSlug)) continue;
+            seen.add(episodeSlug);
+
+            final numMatch =
+                RegExp(r'episode-(\d+(?:\.\d+)?)').firstMatch(episodeSlug);
+            final number = numMatch != null
+                ? double.tryParse(numMatch.group(1)!)
+                : null;
+
+            final cate = link.querySelector('.cate')?.text.trim() ?? '';
+            final suffix = cate.isNotEmpty ? ' ($cate)' : '';
+
+            episodes.add(SourceChapter(
+              id: episodeSlug,
+              title: 'Episode ${number?.toInt() ?? '?'}$suffix',
+              number: number,
+            ));
+          }
+        } catch (e) {
+          // AJAX failed, return whatever we have
+        }
+      }
+    }
+
+    // Sort episodes ascending by number
+    episodes.sort((a, b) => (a.number ?? 0).compareTo(b.number ?? 0));
+    return episodes;
   }
 
   // ========================================================================
@@ -560,7 +683,7 @@ class AniwatchSource extends WatchableSource {
     );
   }
 
-  /// Parse a Jikan episode (fallback when Consumet is unavailable)
+  /// Parse a Jikan episode (fallback when GogoAnime scraping is unavailable)
   SourceChapter _parseJikanEpisode(Map<String, dynamic> episode) {
     final number = episode['mal_id'] as int?;
     final title = episode['title'] as String?;

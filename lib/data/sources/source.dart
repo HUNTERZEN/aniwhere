@@ -154,11 +154,20 @@ class SourceVideo {
   final Map<String, String>? headers;
   final bool isM3U8;
 
+  /// If set, this is an embed URL that should be loaded in a WebView player
+  /// instead of media_kit (because the streaming server requires JS to decrypt)
+  final String? embedUrl;
+
+  /// Whether this video requires a WebView player
+  final bool useWebView;
+
   const SourceVideo({
     required this.url,
     required this.quality,
     this.headers,
     this.isM3U8 = false,
+    this.embedUrl,
+    this.useWebView = false,
   });
 }
 
