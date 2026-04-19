@@ -21,9 +21,22 @@ final mediaDetailsProvider = FutureProvider.family<SourceMedia, (Source, String)
 );
 
 /// Provider for chapters/episodes
+/// Waits for details to load first so anime title is cached (avoids extra Jikan calls)
 final chaptersProvider = FutureProvider.family<List<SourceChapter>, (Source, String)>(
   (ref, params) async {
     final (source, mediaId) = params;
+
+    // Ensure details are loaded first so the source can cache the anime title
+    // (AniWatch needs the title to search Consumet for episodes)
+    try {
+      await ref.watch(mediaDetailsProvider((source, mediaId)).future);
+    } catch (_) {
+      // Details might fail but we can still try to load chapters
+    }
+
+    // Small delay to let Jikan rate limit recover after the details call
+    await Future.delayed(const Duration(milliseconds: 500));
+
     return source.getChapters(mediaId);
   },
 );
