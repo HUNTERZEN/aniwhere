@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/sources/source.dart';
 import '../../data/sources/source_registry.dart';
@@ -42,19 +43,41 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
 
     return Scaffold(
       appBar: GlassAppBar(
-        title: const Text('Browse'),
+        title: Text(
+          'Browse',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+            letterSpacing: -0.5,
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.extension),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ExtensionManagerScreen(),
-                ),
-              );
-            },
-            tooltip: 'Extensions',
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark
+                    ? AppColors.glassBorderDark
+                    : AppColors.glassBorderLight,
+                width: 0.5,
+              ),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.extension, size: 20),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ExtensionManagerScreen(),
+                  ),
+                );
+              },
+              tooltip: 'Extensions',
+            ),
           ),
         ],
         bottom: PreferredSize(

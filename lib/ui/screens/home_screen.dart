@@ -59,43 +59,77 @@ class HomeScreen extends ConsumerWidget {
               child: SafeArea(
                 top: false,
                 bottom: false,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _GlassNavItem(
-                      icon: Icons.collections_bookmark_outlined,
-                      activeIcon: Icons.collections_bookmark,
-                      label: 'Library',
-                      isSelected: selectedIndex == 0,
-                      onTap: () => _onItemTapped(context, 0),
-                      isDark: isDark,
-                    ),
-                    _GlassNavItem(
-                      icon: Icons.explore_outlined,
-                      activeIcon: Icons.explore,
-                      label: 'Browse',
-                      isSelected: selectedIndex == 1,
-                      onTap: () => _onItemTapped(context, 1),
-                      isDark: isDark,
-                      isCenter: true,
-                    ),
-                    _GlassNavItem(
-                      icon: Icons.search_outlined,
-                      activeIcon: Icons.search,
-                      label: 'Search',
-                      isSelected: selectedIndex == 2,
-                      onTap: () => _onItemTapped(context, 2),
-                      isDark: isDark,
-                    ),
-                    _GlassNavItem(
-                      icon: Icons.settings_outlined,
-                      activeIcon: Icons.settings,
-                      label: 'Settings',
-                      isSelected: selectedIndex == 3,
-                      onTap: () => _onItemTapped(context, 3),
-                      isDark: isDark,
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final totalWidth = constraints.maxWidth;
+                    final tabWidth = totalWidth / 4;
+
+                    return Stack(
+                      children: [
+                        // Smoothly sliding glass indicator pill
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 320),
+                          curve: const Cubic(0.2, 1.0, 0.2, 1.0),
+                          left: selectedIndex * tabWidth + (tabWidth - 64) / 2,
+                          top: 0,
+                          width: 64,
+                          height: 38,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.12)
+                                  : AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.15)
+                                    : AppColors.primary.withValues(alpha: 0.15),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _GlassNavItem(
+                              icon: Icons.collections_bookmark_outlined,
+                              activeIcon: Icons.collections_bookmark,
+                              label: 'Library',
+                              isSelected: selectedIndex == 0,
+                              onTap: () => _onItemTapped(context, 0),
+                              isDark: isDark,
+                            ),
+                            _GlassNavItem(
+                              icon: Icons.explore_outlined,
+                              activeIcon: Icons.explore,
+                              label: 'Browse',
+                              isSelected: selectedIndex == 1,
+                              onTap: () => _onItemTapped(context, 1),
+                              isDark: isDark,
+                              isCenter: true,
+                            ),
+                            _GlassNavItem(
+                              icon: Icons.search_outlined,
+                              activeIcon: Icons.search,
+                              label: 'Search',
+                              isSelected: selectedIndex == 2,
+                              onTap: () => _onItemTapped(context, 2),
+                              isDark: isDark,
+                            ),
+                            _GlassNavItem(
+                              icon: Icons.settings_outlined,
+                              activeIcon: Icons.settings,
+                              label: 'Settings',
+                              isSelected: selectedIndex == 3,
+                              onTap: () => _onItemTapped(context, 3),
+                              isDark: isDark,
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -175,23 +209,9 @@ class _GlassNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Animated icon container
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
+            // Dummy transparent container matching the sliding pill height exactly
+            Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? (isDark ? Colors.white.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.12))
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? (isDark ? Colors.white.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.15))
-                      : Colors.transparent,
-                  width: 0.5,
-                ),
-              ),
               child: Icon(
                 isSelected ? activeIcon : icon,
                 size: 24,
