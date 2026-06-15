@@ -6,7 +6,6 @@ import '../../features/browse/browse_screen.dart';
 import '../../features/reader/reader_screen.dart';
 import '../../features/reader/reader_providers.dart';
 import '../../features/player/player_screen.dart';
-import '../../features/player/webview_player_screen.dart';
 import '../../features/player/player_providers.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -35,7 +34,6 @@ class AppRouter {
   static const String trackerSettings = '/settings/trackers';
   static const String reader = '/reader/:id';
   static const String player = '/player/:id';
-  static const String webviewPlayer = '/webview_player/:id';
   static const String details = '/details/:type/:id';
 
   // Router configuration
@@ -107,20 +105,6 @@ class AppRouter {
             );
           }
           return PlayerScreen(params: params);
-        },
-      ),
-      GoRoute(
-        path: webviewPlayer,
-        name: 'webview_player',
-        parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
-          final params = state.extra as PlayerParams?;
-          if (params == null) {
-            return const Scaffold(
-              body: Center(child: Text('Error: No player params provided')),
-            );
-          }
-          return WebViewPlayerScreen(params: params);
         },
       ),
       GoRoute(
