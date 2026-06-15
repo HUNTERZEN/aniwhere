@@ -507,7 +507,7 @@ class _ChapterTile extends StatelessWidget {
       );
       final encodedId = Uri.encodeComponent(chapter.id);
       context.push(
-        AppRouter.webviewPlayer.replaceFirst(':id', encodedId),
+        AppRouter.player.replaceFirst(':id', encodedId),
         extra: params,
       );
     } else {
