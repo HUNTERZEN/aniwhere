@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
 import '../../data/sources/source.dart';
 import 'search_providers.dart';
+import '../../ui/widgets/glass_app_bar.dart';
 
 /// Global search screen for searching across all sources
 class SearchScreen extends ConsumerStatefulWidget {
@@ -33,7 +34,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final filter = ref.watch(searchFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: GlassAppBar(
         title: const Text('Search'),
         actions: [
           if (query.isNotEmpty)
@@ -86,36 +87,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                FilterChip(
-                  label: const Text('All'),
-                  selected: filter == null,
-                  onSelected: (selected) {
-                    if (selected) ref.read(searchFilterProvider.notifier).state = null;
-                  },
+                _SearchFilterChip(
+                  label: 'All',
+                  isSelected: filter == null,
+                  onTap: () => ref.read(searchFilterProvider.notifier).state = null,
                 ),
                 const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Manga'),
-                  selected: filter == SourceContentType.manga,
-                  onSelected: (selected) {
-                    if (selected) ref.read(searchFilterProvider.notifier).state = SourceContentType.manga;
-                  },
+                _SearchFilterChip(
+                  label: 'Manga',
+                  isSelected: filter == SourceContentType.manga,
+                  onTap: () => ref.read(searchFilterProvider.notifier).state = SourceContentType.manga,
                 ),
                 const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Anime'),
-                  selected: filter == SourceContentType.anime,
-                  onSelected: (selected) {
-                    if (selected) ref.read(searchFilterProvider.notifier).state = SourceContentType.anime;
-                  },
+                _SearchFilterChip(
+                  label: 'Anime',
+                  isSelected: filter == SourceContentType.anime,
+                  onTap: () => ref.read(searchFilterProvider.notifier).state = SourceContentType.anime,
                 ),
                 const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Novel'),
-                  selected: filter == SourceContentType.novel,
-                  onSelected: (selected) {
-                    if (selected) ref.read(searchFilterProvider.notifier).state = SourceContentType.novel;
-                  },
+                _SearchFilterChip(
+                  label: 'Novel',
+                  isSelected: filter == SourceContentType.novel,
+                  onTap: () => ref.read(searchFilterProvider.notifier).state = SourceContentType.novel,
                 ),
               ],
             ),
@@ -341,28 +334,48 @@ class _SearchMediaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: AppColors.cardDark,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: media.coverUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: media.coverUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      httpHeaders: _getImageHeaders(media.coverUrl!),
-                      placeholder: (_, __) => Container(
-                        color: AppColors.surfaceDark,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? AppColors.cardDark : Colors.white,
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.glassBorderDark
+                          : AppColors.glassBorderLight,
+                      width: 0.5,
+                    ),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: media.coverUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: media.coverUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          httpHeaders: _getImageHeaders(media.coverUrl!),
+                          placeholder: (_, __) => Container(
+                            color: isDark ? AppColors.surfaceDark : Colors.grey[100],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (_, __, ___) => _buildPlaceholder(isDark),
+                        )
+                      : _buildPlaceholder(isDark),
+                );
+              },
             ),
           ),
           const SizedBox(height: 6),
@@ -385,11 +398,73 @@ class _SearchMediaCard extends StatelessWidget {
     return {};
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(bool isDark) {
     return Container(
-      color: AppColors.surfaceDark,
-      child: const Center(
-        child: Icon(Icons.image, size: 32, color: AppColors.textTertiaryDark),
+      color: isDark ? AppColors.surfaceDark : Colors.grey[100],
+      child: Center(
+        child: Icon(
+          Icons.image,
+          size: 32,
+          color: isDark ? AppColors.textTertiaryDark : Colors.grey[400],
+        ),
+      ),
+    );
+  }
+}
+
+/// Styled search filter chip with frosted glass borders and explicit light/dark labels
+class _SearchFilterChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SearchFilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = AppColors.primary;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? Colors.white.withValues(alpha: 0.12) : primary)
+              : (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.03)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? Colors.white.withValues(alpha: 0.15) : primary)
+                : (isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight),
+            width: 0.5,
+          ),
+          boxShadow: isSelected && !isDark
+              ? [
+                  BoxShadow(
+                    color: primary.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5)),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }

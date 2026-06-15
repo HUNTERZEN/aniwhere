@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Core color palette for Aniwhere
-/// Dark-first design with Deep Purple accent
+/// Glass-first design with Deep Purple accent
 class AppColors {
   AppColors._();
 
@@ -15,22 +15,24 @@ class AppColors {
   static const Color accentLight = Color(0xFFF0ABFC);
   static const Color accentDark = Color(0xFFC026D3);
 
-  // Dark Theme Colors
-  static const Color bgDark = Color(0xFF0D0D0D); // Near black
-  static const Color surfaceDark = Color(0xFF1A1A2E); // Dark surface
-  static const Color cardDark = Color(0xFF232336);
-  static const Color borderDark = Color(0xFF2D2D44);
+  // Dark Theme Colors — softer dark, not pitch black
+  static const Color bgDark = Color(0xFF0F0F16);       // Rich, deep midnight slate
+  static const Color surfaceDark = Color(0xFF161622);   // Dark surface with blue/violet tint
+  static const Color cardDark = Color(0xFF1E1E2F);      // Slightly lighter card surface
+  static const Color borderDark = Color(0xFF2A2A40);    // Subtle glass border
+  static const Color glassBorderDark = Color(0x1BFFFFFF); // White 11% for glass borders
 
   // Light Theme Colors
-  static const Color bgLight = Color(0xFFFAFAFA);
+  static const Color bgLight = Color(0xFFF5F6FA);       // Soft warm off-white
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color cardLight = Color(0xFFF5F5F5);
+  static const Color cardLight = Color(0xFFFFFFFF);
   static const Color borderLight = Color(0xFFE5E5E5);
+  static const Color glassBorderLight = Color(0x12000000); // Black 7% for light glass borders
 
   // Text Colors - Dark Theme
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0xFFB0B0B0);
-  static const Color textTertiaryDark = Color(0xFF707070);
+  static const Color textSecondaryDark = Color(0xFFB0B0C0);
+  static const Color textTertiaryDark = Color(0xFF606080);
 
   // Text Colors - Light Theme
   static const Color textPrimaryLight = Color(0xFF1A1A1A);

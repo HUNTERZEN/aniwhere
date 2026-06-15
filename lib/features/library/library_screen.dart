@@ -9,6 +9,7 @@ import '../../core/utils/providers.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/sources/source_registry.dart';
+import '../../ui/widgets/glass_app_bar.dart';
 
 /// Provider for filtered and sorted library entries
 final filteredLibraryProvider = Provider<List<LibraryEntry>>((ref) {
@@ -101,15 +102,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final displayMode = ref.watch(libraryDisplayModeProvider);
     final statusFilter = ref.watch(libraryStatusFilterProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
+      appBar: GlassAppBar(
         title: _isSearching
             ? TextField(
                 autofocus: true,
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontSize: 16,
+                ),
+                decoration: InputDecoration(
                   hintText: 'Search library...',
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                   filled: false,
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.4),
+                  ),
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
               )
@@ -148,11 +160,49 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             onPressed: () => _showFilterSheet(context),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+                width: 0.5,
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
+                  width: 0.5,
+                ),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: isDark ? Colors.white : AppColors.primary,
+              unselectedLabelColor: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4),
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
+            ),
+          ),
         ),
       ),
       body: TabBarView(
@@ -328,12 +378,30 @@ class _LibraryGridItem extends ConsumerWidget {
         children: [
           // Cover image with overlays
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: AppColors.cardDark,
-              ),
-              clipBehavior: Clip.antiAlias,
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? AppColors.cardDark : Colors.white,
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.glassBorderDark
+                          : AppColors.glassBorderLight,
+                      width: 0.5,
+                    ),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -416,6 +484,8 @@ class _LibraryGridItem extends ConsumerWidget {
                     ),
                 ],
               ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 8),

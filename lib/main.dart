@@ -24,15 +24,8 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  // Set system UI overlay style for dark theme
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  // Enable edge-to-edge mode
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   runApp(
     const ProviderScope(
@@ -48,6 +41,25 @@ class AniwhereApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeNotifierProvider);
+    final flutterThemeMode = _mapThemeMode(themeMode);
+
+    // Determine the effective brightness
+    final brightness = flutterThemeMode == material.ThemeMode.dark
+        ? Brightness.dark
+        : flutterThemeMode == material.ThemeMode.light
+            ? Brightness.light
+            : MediaQuery.platformBrightnessOf(context);
+
+    // Adapt status bar & nav bar to current theme
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness:
+          brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+    ));
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -57,7 +69,7 @@ class AniwhereApp extends ConsumerWidget {
           // Theme configuration with Material You dynamic colors
           theme: AppTheme.lightTheme(lightDynamic),
           darkTheme: AppTheme.darkTheme(darkDynamic),
-          themeMode: _mapThemeMode(themeMode),
+          themeMode: flutterThemeMode,
           // Router configuration
           routerConfig: AppRouter.router,
         );
