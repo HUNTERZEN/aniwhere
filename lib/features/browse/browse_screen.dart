@@ -82,55 +82,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
-          child: Container(
-            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                width: 0.5,
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                  width: 0.5,
-                ),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: isDark ? Colors.white : AppColors.primary,
-              unselectedLabelColor: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4),
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.menu_book, size: 18),
-                  text: 'Manga',
-                ),
-                Tab(
-                  icon: Icon(Icons.play_circle, size: 18),
-                  text: 'Anime',
-                ),
-              ],
-            ),
+          child: _BrowseSegmentedControl(
+            controller: _tabController,
+            onTap: (index) {
+              _tabController.animateTo(index);
+            },
           ),
         ),
       ),
@@ -612,6 +568,130 @@ class _MediaCard extends StatelessWidget {
       color: AppColors.surfaceDark,
       child: const Center(
         child: Icon(Icons.image, size: 32, color: AppColors.textTertiaryDark),
+      ),
+    );
+  }
+}
+
+/// Custom compact sliding segmented control for Browse (Manga/Anime) with smooth active pill animation
+class _BrowseSegmentedControl extends StatelessWidget {
+  final TabController controller;
+  final ValueChanged<int> onTap;
+
+  const _BrowseSegmentedControl({
+    required this.controller,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          width: 0.5,
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          final tabWidth = totalWidth / 2;
+
+          return AnimatedBuilder(
+            animation: controller.animation!,
+            builder: (context, child) {
+              final value = controller.animation?.value ?? controller.index.toDouble();
+
+              return Stack(
+                children: [
+                  // Sliding indicator pill
+                  Positioned(
+                    left: value * tabWidth,
+                    top: 0,
+                    bottom: 0,
+                    width: tabWidth,
+                    child: Container(
+                      margin: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tab labels row (Manga and Anime inline)
+                  Row(
+                    children: [
+                      _buildTab(context, 0, Icons.menu_book, 'Manga', value),
+                      _buildTab(context, 1, Icons.play_circle, 'Anime', value),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTab(BuildContext context, int index, IconData icon, String label, double value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final distance = (value - index).abs();
+    final double t = (1.0 - distance).clamp(0.0, 1.0);
+    final selectedColor = isDark ? Colors.white : AppColors.primary;
+    final unselectedColor = isDark
+        ? Colors.white.withValues(alpha: 0.5)
+        : Colors.black.withValues(alpha: 0.4);
+    final activeColor = Color.lerp(unselectedColor, selectedColor, t)!;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 38,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: activeColor,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: activeColor,
+                  fontWeight: t > 0.5 ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

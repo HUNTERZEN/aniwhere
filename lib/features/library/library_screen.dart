@@ -162,46 +162,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
-          child: Container(
-            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                width: 0.5,
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                  width: 0.5,
-                ),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: isDark ? Colors.white : AppColors.primary,
-              unselectedLabelColor: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4),
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-              tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
-            ),
+          child: _LibrarySegmentedControl(
+            controller: _tabController,
+            labels: _tabs.map((tab) => tab.label).toList(),
+            onTap: (index) {
+              _tabController.animateTo(index);
+            },
           ),
         ),
       ),
@@ -1256,6 +1222,115 @@ class _EntryActionSheetState extends ConsumerState<_EntryActionSheet> {
             child: const Text('Remove'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Custom sliding segmented control for Library tabs with smooth active pill animation
+class _LibrarySegmentedControl extends StatelessWidget {
+  final TabController controller;
+  final List<String> labels;
+  final ValueChanged<int> onTap;
+
+  const _LibrarySegmentedControl({
+    required this.controller,
+    required this.labels,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          width: 0.5,
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          final tabWidth = totalWidth / labels.length;
+
+          return AnimatedBuilder(
+            animation: controller.animation!,
+            builder: (context, child) {
+              final value = controller.animation?.value ?? controller.index.toDouble();
+
+              return Stack(
+                children: [
+                  // Sliding indicator pill
+                  Positioned(
+                    left: value * tabWidth,
+                    top: 0,
+                    bottom: 0,
+                    width: tabWidth,
+                    child: Container(
+                      margin: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Tab labels row
+                  Row(
+                    children: List.generate(labels.length, (index) {
+                      final distance = (value - index).abs();
+                      final double t = (1.0 - distance).clamp(0.0, 1.0);
+                      final selectedColor = isDark ? Colors.white : AppColors.primary;
+                      final unselectedColor = isDark
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : Colors.black.withValues(alpha: 0.4);
+                      final textColor = Color.lerp(unselectedColor, selectedColor, t)!;
+
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => onTap(index),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            height: 38,
+                            alignment: Alignment.center,
+                            child: Text(
+                              labels[index],
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: t > 0.5 ? FontWeight.bold : FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
+          );
+        },
       ),
     );
   }
