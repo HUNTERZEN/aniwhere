@@ -10,6 +10,7 @@ import '../../features/player/player_providers.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/tracker_settings_screen.dart';
+import '../../features/music/music_screen.dart';
 import '../../ui/screens/home_screen.dart';
 import '../../data/sources/source.dart';
 import '../../features/browse/source_browse_screen.dart';
@@ -29,6 +30,7 @@ class AppRouter {
   static const String home = '/';
   static const String library = '/library';
   static const String browse = '/browse';
+  static const String music = '/music';
   static const String search = '/search';
   static const String settings = '/settings';
   static const String trackerSettings = '/settings/trackers';
@@ -39,7 +41,7 @@ class AppRouter {
   // Router configuration
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: home,
+    initialLocation: music,
     debugLogDiagnostics: true,
     routes: [
       // Shell route for bottom navigation
@@ -52,6 +54,13 @@ class AppRouter {
             name: 'library',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: LibraryScreen(),
+            ),
+          ),
+          GoRoute(
+            path: music,
+            name: 'music',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: MusicScreen(),
             ),
           ),
           GoRoute(

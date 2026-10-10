@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.aniwhere.aniwhere"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

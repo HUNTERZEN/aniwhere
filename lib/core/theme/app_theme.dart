@@ -13,16 +13,22 @@ class AppTheme {
 
   // Dark Theme (Default) — Glassmorphism
   static ThemeData darkTheme([ColorScheme? dynamicScheme]) {
-    final baseScheme = dynamicScheme?.harmonized() ??
-        ColorScheme.fromSeed(
-          seedColor: _defaultSeedColor,
-          brightness: Brightness.dark,
-        );
+    final baseScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFFFFFFFF),
+      brightness: Brightness.dark,
+    );
 
-    // Soft dark navy-charcoal surface (not pitch black)
+    // Pure OLED Monochrome black & white scheme
     final colorScheme = baseScheme.copyWith(
+      primary: Colors.white,
+      onPrimary: Colors.black,
+      secondary: const Color(0xFFE4E4E7),
+      onSecondary: Colors.black,
       surface: AppColors.bgDark,
+      onSurface: Colors.white,
+      onSurfaceVariant: const Color(0xFFA1A1AA),
       surfaceContainerHighest: AppColors.cardDark,
+      outline: const Color(0xFF262626),
     );
 
     // Glass border color used consistently

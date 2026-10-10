@@ -384,7 +384,7 @@ class _BrowseContentTabState extends ConsumerState<_BrowseContentTab>
       onRefresh: () => _loadPage(1),
       child: GridView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 140),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           childAspectRatio: 0.55,

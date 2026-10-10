@@ -10,9 +10,12 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
 import '../../core/router/app_router.dart';
 import '../../data/models/app_settings.dart';
+import '../../data/models/music_models.dart';
+import '../../features/music/music_providers.dart';
 import '../../ui/widgets/glass_app_bar.dart';
 
 /// Settings screen for app configuration
+/// Now with full music/audio settings
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -54,7 +57,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           final s = settings ?? AppSettings();
           return ListView(
             children: [
+              // ═══════════════════════════════════════════════
               // Appearance Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'Appearance',
                 children: [
@@ -64,10 +69,197 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     subtitle: _getThemeLabel(themeMode),
                     onTap: () => _showThemeDialog(context, ref, themeMode),
                   ),
+                  _SwitchSettingsTile(
+                    icon: Icons.auto_awesome,
+                    title: 'Liquid Glass',
+                    subtitle: 'Frosted glass blur on nav bar & overlays',
+                    value: ref.watch(liquidGlassProvider),
+                    onChanged: (v) =>
+                        ref.read(liquidGlassProvider.notifier).state = v,
+                  ),
+                  if (ref.watch(liquidGlassProvider)) ...[
+                    _SliderSettingsTile(
+                      icon: Icons.blur_on,
+                      title: 'Liquid Glass Blur',
+                      subtitle: '${ref.watch(liquidGlassIntensityProvider).toInt()}px radius',
+                      value: ref.watch(liquidGlassIntensityProvider),
+                      min: 5.0,
+                      max: 45.0,
+                      divisions: 40,
+                      onChanged: (v) =>
+                          ref.read(liquidGlassIntensityProvider.notifier).state = v,
+                    ),
+                    _SliderSettingsTile(
+                      icon: Icons.opacity,
+                      title: 'Liquid Glass Opacity',
+                      subtitle: '${(ref.watch(liquidGlassOpacityProvider) * 100).toInt()}% tint',
+                      value: ref.watch(liquidGlassOpacityProvider),
+                      min: 0.15,
+                      max: 0.70,
+                      divisions: 55,
+                      onChanged: (v) =>
+                          ref.read(liquidGlassOpacityProvider.notifier).state = v,
+                    ),
+                  ],
+                  _SettingsTile(
+                    icon: Icons.notifications_active,
+                    title: 'System Media & Device Capsule',
+                    subtitle: 'Shows playback in notification drawer & punch-hole capsule',
+                    onTap: () {},
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.animation,
+                    title: 'Reduce Animations',
+                    subtitle: 'Freeze mesh gradients & motion effects',
+                    value: ref.watch(reduceAnimationProvider),
+                    onChanged: (v) =>
+                        ref.read(reduceAnimationProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.image,
+                    title: 'Full Bleed Artwork',
+                    subtitle: 'Edge-to-edge album art on the player',
+                    value: ref.watch(fullBleedArtworkProvider),
+                    onChanged: (v) =>
+                        ref.read(fullBleedArtworkProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.movie_filter,
+                    title: 'Animated Canvas',
+                    subtitle: 'Motion artwork behind player cover art',
+                    value: ref.watch(animatedCanvasProvider),
+                    onChanged: (v) =>
+                        ref.read(animatedCanvasProvider.notifier).state = v,
+                  ),
                 ],
               ),
 
-              // Reader Section
+              // ═══════════════════════════════════════════════
+              // Audio & Playback Section 
+              // ═══════════════════════════════════════════════
+              _SettingsSection(
+                title: 'Audio & Playback',
+                children: [
+                  _SettingsTile(
+                    icon: Icons.wifi,
+                    title: 'Audio Quality (Wi-Fi)',
+                    subtitle: ref.watch(audioQualityWifiProvider).label,
+                    onTap: () => _showAudioQualityDialog(
+                      context,
+                      ref,
+                      'Audio Quality (Wi-Fi)',
+                      audioQualityWifiProvider,
+                    ),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.signal_cellular_alt,
+                    title: 'Audio Quality (Cellular)',
+                    subtitle: ref.watch(audioQualityCellularProvider).label,
+                    onTap: () => _showAudioQualityDialog(
+                      context,
+                      ref,
+                      'Audio Quality (Cellular)',
+                      audioQualityCellularProvider,
+                    ),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.download,
+                    title: 'Download Quality',
+                    subtitle: ref.watch(downloadQualityProvider).label,
+                    onTap: () => _showDownloadQualityDialog(context, ref),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.compare_arrows,
+                    title: 'Crossfade',
+                    subtitle: ref.watch(crossfadeSecondsProvider) == 0
+                        ? 'Off'
+                        : '${ref.watch(crossfadeSecondsProvider)}s',
+                    onTap: () => _showCrossfadeDialog(context, ref),
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.skip_next,
+                    title: 'Skip Silence',
+                    value: ref.watch(skipSilenceProvider),
+                    onChanged: (v) =>
+                        ref.read(skipSilenceProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.volume_up,
+                    title: 'Loudness Normalization',
+                    subtitle: 'Level every track to the same loudness',
+                    value: ref.watch(loudnessNormalizationProvider),
+                    onChanged: (v) =>
+                        ref.read(loudnessNormalizationProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.equalizer,
+                    title: 'Equalizer',
+                    value: ref.watch(equalizerEnabledProvider),
+                    onChanged: (v) =>
+                        ref.read(equalizerEnabledProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.surround_sound,
+                    title: 'Spatial Audio',
+                    subtitle: 'Stereo widening & cross-feed',
+                    value: ref.watch(spatialAudioProvider),
+                    onChanged: (v) =>
+                        ref.read(spatialAudioProvider.notifier).state = v,
+                  ),
+                  _SettingsTile(
+                    icon: Icons.memory,
+                    title: 'Output PCM Mode',
+                    subtitle: ref.watch(outputPcmModeProvider).label,
+                    onTap: () => _showPcmModeDialog(context, ref),
+                  ),
+                ],
+              ),
+
+              // ═══════════════════════════════════════════════
+              // Lyrics Section
+              // ═══════════════════════════════════════════════
+              _SettingsSection(
+                title: 'Lyrics',
+                children: [
+                  _SwitchSettingsTile(
+                    icon: Icons.lyrics,
+                    title: 'Synced Lyrics',
+                    subtitle: 'Time-synced lyrics on the player',
+                    value: ref.watch(syncedLyricsProvider),
+                    onChanged: (v) =>
+                        ref.read(syncedLyricsProvider.notifier).state = v,
+                  ),
+                  _SwitchSettingsTile(
+                    icon: Icons.blur_on,
+                    title: 'Lyrics Blur',
+                    subtitle: 'Blur unfocused lyric lines',
+                    value: ref.watch(lyricsBlurProvider),
+                    onChanged: (v) =>
+                        ref.read(lyricsBlurProvider.notifier).state = v,
+                  ),
+                ],
+              ),
+
+              // ═══════════════════════════════════════════════
+              // Player Stats
+              // ═══════════════════════════════════════════════
+              _SettingsSection(
+                title: 'Player',
+                children: [
+                  _SwitchSettingsTile(
+                    icon: Icons.analytics,
+                    title: 'Stats for Nerds',
+                    subtitle: 'Show codec, bitrate, sample rate on player',
+                    value: ref.watch(showNerdStatsProvider),
+                    onChanged: (v) =>
+                        ref.read(showNerdStatsProvider.notifier).state = v,
+                  ),
+                ],
+              ),
+
+              // ═══════════════════════════════════════════════
+              // Reader Section (original)
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'Reader',
                 children: [
@@ -130,9 +322,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
-              // Player Section
+              // ═══════════════════════════════════════════════
+              // Video Player Section (original)
+              // ═══════════════════════════════════════════════
               _SettingsSection(
-                title: 'Player',
+                title: 'Video Player',
                 children: [
                   _SettingsTile(
                     icon: Icons.speed,
@@ -181,7 +375,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
+              // ═══════════════════════════════════════════════
               // Library Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'Library',
                 children: [
@@ -209,7 +405,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
+              // ═══════════════════════════════════════════════
               // Tracking Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'Tracking',
                 children: [
@@ -222,7 +420,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
+              // ═══════════════════════════════════════════════
               // API Configuration Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'API Configuration',
                 children: [
@@ -282,7 +482,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
+              // ═══════════════════════════════════════════════
               // Data Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'Data & Storage',
                 children: [
@@ -311,7 +513,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
 
+              // ═══════════════════════════════════════════════
               // About Section
+              // ═══════════════════════════════════════════════
               _SettingsSection(
                 title: 'About',
                 children: [
@@ -343,7 +547,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         applicationName: 'Aniwhere',
                         applicationVersion: 'v$_appVersion (Build $_buildNumber)',
                         applicationIcon: const Icon(Icons.play_circle_outline, size: 48, color: AppColors.primary),
-                        applicationLegalese: '© 2026 Aniwhere\nWatch and read anime, manga, anywhere.',
+                        applicationLegalese: '© 2026 Aniwhere\nWatch, read, and listen — anime, manga, and music, anywhere.',
                       );
                     },
                   ),
@@ -396,7 +600,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     switch (mode) {
       case ThemeMode.system: return 'System';
       case ThemeMode.light:  return 'Light';
-      case ThemeMode.dark:   return 'Dark';
+      case ThemeMode.dark:   return 'Monochrome (Black & White)';
     }
   }
 
@@ -452,6 +656,156 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 if (value != null) {
                   ref.read(themeNotifierProvider.notifier).setTheme(value);
                   Navigator.pop(context);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────── Audio Quality dialog ───────────────────
+
+  void _showAudioQualityDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    StateNotifierProvider<PersistentEnumNotifier<AudioQuality>, AudioQuality> provider,
+  ) {
+    final current = ref.read(provider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AudioQuality.values.map((q) {
+            return RadioListTile<AudioQuality>(
+              title: Text(q.label),
+              subtitle: Text(q.detail, style: const TextStyle(fontSize: 12)),
+              value: q,
+              groupValue: current,
+              activeColor: AppColors.primary,
+              onChanged: (v) {
+                if (v != null) {
+                  ref.read(provider.notifier).state = v;
+                  Navigator.pop(ctx);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────── Download Quality dialog ───────────────────
+
+  void _showDownloadQualityDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(downloadQualityProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Download Quality'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: DownloadQuality.values.map((q) {
+            return RadioListTile<DownloadQuality>(
+              title: Text(q.label),
+              subtitle: Text('${q.detail} · ${q.perTrack}',
+                  style: const TextStyle(fontSize: 12)),
+              value: q,
+              groupValue: current,
+              activeColor: AppColors.primary,
+              onChanged: (v) {
+                if (v != null) {
+                  ref.read(downloadQualityProvider.notifier).state = v;
+                  Navigator.pop(ctx);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────── Crossfade dialog ───────────────────
+
+  void _showCrossfadeDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(crossfadeSecondsProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        int value = current;
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) => AlertDialog(
+            title: const Text('Crossfade'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value == 0 ? 'Off' : '${value}s',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+                Slider(
+                  value: value.toDouble(),
+                  min: 0,
+                  max: 12,
+                  divisions: 12,
+                  activeColor: AppColors.primary,
+                  label: value == 0 ? 'Off' : '${value}s',
+                  onChanged: (v) {
+                    setLocalState(() => value = v.round());
+                  },
+                ),
+                Text(
+                  'Adjustable 0–12 seconds crossfade\nbetween tracks',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(crossfadeSecondsProvider.notifier).state = value;
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Apply'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ─────────────────── PCM Mode dialog ───────────────────
+
+  void _showPcmModeDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(outputPcmModeProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Output PCM Mode'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: OutputPcmMode.values.map((m) {
+            return RadioListTile<OutputPcmMode>(
+              title: Text(m.label),
+              value: m,
+              groupValue: current,
+              activeColor: AppColors.primary,
+              onChanged: (v) {
+                if (v != null) {
+                  ref.read(outputPcmModeProvider.notifier).state = v;
+                  Navigator.pop(ctx);
                 }
               },
             );
@@ -730,16 +1084,18 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-/// Switch settings tile
+/// Switch settings tile with optional subtitle
 class _SwitchSettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _SwitchSettingsTile({
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.value,
     required this.onChanged,
   });
@@ -749,6 +1105,7 @@ class _SwitchSettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle!) : null,
       trailing: Switch(
         value: value,
         onChanged: onChanged,
@@ -758,3 +1115,76 @@ class _SwitchSettingsTile extends StatelessWidget {
     );
   }
 }
+
+/// Slider settings tile for continuous adjustments like blur and opacity
+class _SliderSettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final double value;
+  final double min;
+  final double max;
+  final int? divisions;
+  final ValueChanged<double> onChanged;
+
+  const _SliderSettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.min,
+    required this.max,
+    this.divisions,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 22, color: AppColors.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: divisions,
+            activeColor: AppColors.primary,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -8,8 +8,11 @@ import '../../core/router/app_router.dart';
 import '../../core/utils/providers.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/app_settings.dart';
+import '../../data/models/music_models.dart';
 import '../../data/sources/source_registry.dart';
 import '../../ui/widgets/glass_app_bar.dart';
+import '../music/music_action_sheets.dart';
+import '../music/music_providers.dart';
 
 /// Provider for filtered and sorted library entries
 final filteredLibraryProvider = Provider<List<LibraryEntry>>((ref) {
@@ -80,6 +83,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   final List<_LibraryTab> _tabs = [
     const _LibraryTab('All', null),
+    const _LibraryTab('Music', null, isMusic: true),
     const _LibraryTab('Manga', MediaType.manga),
     const _LibraryTab('Anime', MediaType.anime),
     const _LibraryTab('Novels', MediaType.novel),
@@ -173,15 +177,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: _tabs.map((tab) => _LibraryTabView(
-          mediaType: tab.type,
-          searchQuery: _searchQuery,
-        )).toList(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go(AppRouter.browse),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        children: _tabs.map((tab) {
+          if (tab.isMusic) {
+            return const _MusicLibraryTabView();
+          }
+          return _LibraryTabView(
+            mediaType: tab.type,
+            searchQuery: _searchQuery,
+          );
+        }).toList(),
       ),
     );
   }
@@ -198,8 +202,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 class _LibraryTab {
   final String label;
   final MediaType? type;
+  final bool isMusic;
 
-  const _LibraryTab(this.label, this.type);
+  const _LibraryTab(this.label, this.type, {this.isMusic = false});
 }
 
 /// Tab view showing filtered library entries
@@ -275,13 +280,7 @@ class _EmptyLibraryView extends StatelessWidget {
                 : 'Start by adding some $typeLabel from Browse',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 24),
-          if (!hasFilter)
-            ElevatedButton.icon(
-              onPressed: () => context.go(AppRouter.browse),
-              icon: const Icon(Icons.explore),
-              label: const Text('Browse'),
-            ),
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -297,7 +296,7 @@ class _LibraryGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         childAspectRatio: 0.6,
@@ -559,7 +558,7 @@ class _LibraryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
       itemCount: entries.length,
       itemBuilder: (context, index) {
         return _LibraryListItem(entry: entries[index]);
@@ -1331,6 +1330,206 @@ class _LibrarySegmentedControl extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Music Library view tab inside LibraryScreen
+class _MusicLibraryTabView extends ConsumerWidget {
+  const _MusicLibraryTabView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userPlaylists = ref.watch(userPlaylistsProvider);
+    final likedIds = ref.watch(likedSongsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final favPlaylist = userPlaylists.firstWhere(
+      (p) => p.id == 'fav_playlist',
+      orElse: () => MusicPlaylist(
+        id: 'fav_playlist',
+        title: 'Liked Songs',
+        description: 'Favorite tracks saved to library',
+        trackCount: likedIds.length,
+        tracks: const [],
+      ),
+    );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      children: [
+        // Liked Songs Banner Card
+        GestureDetector(
+          onTap: () => showPlaylistDetailSheet(context, ref, favPlaylist),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE94057).withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Liked Songs',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${favPlaylist.tracks.isNotEmpty ? favPlaylist.tracks.length : likedIds.length} tracks · Auto-synced playlist',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFE94057),
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  onPressed: favPlaylist.tracks.isEmpty
+                      ? null
+                      : () {
+                          ref.read(musicPlayerProvider.notifier).playTrack(
+                                favPlaylist.tracks.first,
+                                queue: favPlaylist.tracks,
+                                index: 0,
+                              );
+                        },
+                  child: const Icon(Icons.play_arrow_rounded, size: 28),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section header for Custom Playlists
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Your Playlists (${userPlaylists.length})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () => showCreatePlaylistDialog(context, ref),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('New Playlist', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        // List of Playlists
+        ...userPlaylists.map((pl) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF18181E) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: pl.thumbnailUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: pl.thumbnailUrl!,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => _plIconFallback(isDark),
+                      )
+                    : _plIconFallback(isDark),
+              ),
+              title: Text(
+                pl.title,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              subtitle: Text(
+                '${pl.trackCount} songs · ${pl.description ?? "Playlist"}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (pl.tracks.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.play_circle_filled_rounded, color: AppColors.primary, size: 30),
+                      onPressed: () {
+                        ref.read(musicPlayerProvider.notifier).playTrack(
+                              pl.tracks.first,
+                              queue: pl.tracks,
+                              index: 0,
+                            );
+                      },
+                    ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                ],
+              ),
+              onTap: () => showPlaylistDetailSheet(context, ref, pl),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _plIconFallback(bool isDark) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF26262E) : const Color(0xFFE5E5EA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        Icons.queue_music_rounded,
+        color: isDark ? Colors.white38 : Colors.black38,
+        size: 26,
       ),
     );
   }
