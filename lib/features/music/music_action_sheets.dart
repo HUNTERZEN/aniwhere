@@ -14,6 +14,7 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final useGlass = ref.read(liquidGlassProvider);
   final intensity = ref.read(liquidGlassIntensityProvider);
+  final opacity = ref.read(liquidGlassOpacityProvider);
 
   showModalBottomSheet(
     context: context,
@@ -29,11 +30,11 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xE6141418)
-                : const Color(0xF2FFFFFF),
+                ? const Color(0xFF141418).withValues(alpha: opacity)
+                : Colors.white.withValues(alpha: opacity),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08),
+              color: isDark ? Colors.white.withValues(alpha: 0.15 + (opacity * 0.1)) : Colors.black.withValues(alpha: 0.08),
               width: 0.8,
             ),
           ),

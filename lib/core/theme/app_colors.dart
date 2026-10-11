@@ -158,47 +158,60 @@ class AppColors {
     bool isSelected = false,
     bool isPressed = false,
     Color? customTint,
+    double? opacity,
+    double? intensity,
   }) {
+    final alpha = opacity ?? 0.35;
+    final blur = intensity ?? 25.0;
+
     if (isDark) {
       final baseColor = customTint ??
           (isSelected
-              ? accent.withValues(alpha: 0.28)
-              : (isPressed ? const Color(0x551E1E28) : const Color(0x331A1A26)));
+              ? const Color(0xFFFA2D48).withValues(alpha: 0.30)
+              : (isPressed
+                  ? const Color(0xFF1E1E28).withValues(alpha: (alpha * 1.3).clamp(0.0, 0.95))
+                  : const Color(0xFF14141E).withValues(alpha: alpha)));
       final borderColor = isSelected
-          ? accentLight.withValues(alpha: 0.60)
-          : Colors.white.withValues(alpha: isPressed ? 0.28 : 0.16);
+          ? const Color(0xFFFA2D48).withValues(alpha: 0.65)
+          : Colors.white.withValues(alpha: isPressed ? 0.32 : (0.14 + (alpha * 0.12)));
 
       return BoxDecoration(
         color: baseColor,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor, width: isSelected ? 1.2 : 0.8),
+        border: Border.all(color: borderColor, width: isSelected ? 1.2 : 0.85),
         boxShadow: [
           BoxShadow(
             color: isSelected
-                ? accent.withValues(alpha: 0.22)
+                ? const Color(0xFFFA2D48).withValues(alpha: 0.28)
                 : Colors.black.withValues(alpha: 0.40),
-            blurRadius: isPressed ? 6 : 14,
+            blurRadius: isPressed ? 6 : (12 + (blur * 0.25)),
             offset: Offset(0, isPressed ? 2 : 4),
           ),
+          if (isSelected)
+            BoxShadow(
+              color: const Color(0xFFFA2D48).withValues(alpha: 0.20),
+              blurRadius: 16,
+              spreadRadius: 1,
+            ),
         ],
       );
     } else {
       final baseColor = customTint ??
           (isSelected
-              ? accent.withValues(alpha: 0.18)
-              : (isPressed ? Colors.grey.shade200 : Colors.white.withValues(alpha: 0.85)));
+              ? const Color(0xFFFA2D48).withValues(alpha: 0.18)
+              : (isPressed ? Colors.grey.shade200 : Colors.white.withValues(alpha: alpha)));
       final borderColor = isSelected
-          ? accent.withValues(alpha: 0.50)
+          ? const Color(0xFFFA2D48).withValues(alpha: 0.55)
           : Colors.black.withValues(alpha: 0.08);
 
       return BoxDecoration(
         color: baseColor,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor, width: isSelected ? 1.2 : 0.8),
+        border: Border.all(color: borderColor, width: isSelected ? 1.2 : 0.85),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: isPressed ? 4 : 10,
+            blurRadius: isPressed ? 4 : (8 + (blur * 0.2)),
             offset: Offset(0, isPressed ? 1 : 3),
           ),
         ],
@@ -211,12 +224,16 @@ class AppColors {
     required bool isDark,
     bool isSelected = false,
     bool isPressed = false,
+    double? opacity,
+    double? intensity,
   }) {
     return appleGlassDecoration(
       isDark: isDark,
       radius: 999,
       isSelected: isSelected,
       isPressed: isPressed,
+      opacity: opacity,
+      intensity: intensity,
     );
   }
 }

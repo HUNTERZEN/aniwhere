@@ -21,7 +21,7 @@ class NowPlayingScreen extends ConsumerStatefulWidget {
 class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _meshController;
-  bool _showLyrics = false;
+  bool _showLyrics = true;
   bool _showQueue = false;
 
   @override
@@ -82,7 +82,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
           SafeArea(
             child: Column(
               children: [
-                // ── Top bar ──
+                // ── Apple Music Header Bar (Screenshot 2) ──
                 _TopBar(
                   onClose: () => Navigator.pop(context),
                   onLyrics: () => setState(() {
@@ -95,35 +95,27 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                   }),
                   showLyrics: _showLyrics,
                   showQueue: _showQueue,
-                  track: state.currentTrack,
+                  track: track,
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
-                // ── Artwork or lyrics ──
+                // ── Center Stage: Synced Lyrics, Queue, or Large Artwork ──
                 Expanded(
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.05),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          )),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: _showLyrics
-                        ? _LyricsView(key: const ValueKey('lyrics'), track: track, position: state.position)
-                        : _showQueue
-                            ? _QueueView(key: const ValueKey('queue'))
-                            : _ArtworkView(key: const ValueKey('artwork'), track: track),
+                    duration: const Duration(milliseconds: 350),
+                    child: _showQueue
+                        ? _QueueView(key: const ValueKey('queue'))
+                        : _showLyrics
+                            ? _LyricsView(
+                                key: const ValueKey('lyrics'),
+                                track: track,
+                                position: state.position,
+                              )
+                            : _ArtworkView(
+                                key: const ValueKey('artwork'),
+                                track: track,
+                              ),
                   ),
                 ),
 
@@ -131,28 +123,37 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                 if (showStats)
                   _NerdStats(track: track),
 
-                // ── Track info ──
-                _TrackInfo(track: track),
+                const SizedBox(height: 10),
+
+                // ── Apple Music Scrubber Slider & Timestamps ──
+                _ProgressSlider(state: state),
 
                 const SizedBox(height: 8),
 
-                // ── Progress slider ──
-                _ProgressSlider(state: state),
-
-                const SizedBox(height: 4),
-
-                // ── Timestamps ──
-                _Timestamps(state: state),
-
-                const SizedBox(height: 12),
-
-                // ── Main controls ──
+                // ── Main Controls (Rewind, Play/Pause, Fast-Forward) ──
                 _MainControls(state: state),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                // ── Bottom actions ──
-                _BottomActions(state: state),
+                // ── Volume Slider (Screenshot 2) ──
+                const _VolumeSlider(),
+
+                const SizedBox(height: 14),
+
+                // ── Bottom Action Pills: Lyrics Quote, AirPlay, Queue ──
+                _BottomActions(
+                  state: state,
+                  showLyrics: _showLyrics,
+                  showQueue: _showQueue,
+                  onLyrics: () => setState(() {
+                    _showLyrics = !_showLyrics;
+                    if (_showLyrics) _showQueue = false;
+                  }),
+                  onQueue: () => setState(() {
+                    _showQueue = !_showQueue;
+                    if (_showQueue) _showLyrics = false;
+                  }),
+                ),
 
                 const SizedBox(height: 16),
               ],
@@ -287,40 +288,133 @@ class _TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          // Close button — neumorphic circle
-          _NeumorphicPressButton(
-            onTap: onClose,
-            child: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 26),
+    final isLiked = track != null && ref.watch(likedSongsProvider).contains(track!.id);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Subtle top drag handle
+        GestureDetector(
+          onTap: onClose,
+          child: Container(
+            margin: const EdgeInsets.only(top: 8, bottom: 8),
+            width: 38,
+            height: 4.5,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(2.5),
+            ),
           ),
-          const Spacer(),
-          _NeumorphicTogglePill(
-            icon: Icons.lyrics,
-            label: 'Lyrics',
-            isActive: showLyrics,
-            onTap: onLyrics,
+        ),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+          child: Row(
+            children: [
+              // Mini Album Artwork Squircle (Screenshot 2)
+              GestureDetector(
+                onTap: onLyrics,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: track?.albumArtUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: track!.albumArtUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            color: const Color(0xFF202028),
+                            child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFF202028),
+                          child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
+                        ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Title & Artist Column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      track?.title ?? 'Unknown Track',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      track?.artist ?? 'Unknown Artist',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Favorite Star Button (Screenshot 2)
+              IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isLiked ? Icons.star_rounded : Icons.star_outline_rounded,
+                    key: ValueKey(isLiked),
+                    color: isLiked ? Colors.white : Colors.white70,
+                    size: 26,
+                  ),
+                ),
+                onPressed: () {
+                  if (track == null) return;
+                  HapticFeedback.lightImpact();
+                  ref.read(likedSongsProvider.notifier).toggleLike(track!.id);
+                  if (!isLiked) {
+                    ref.read(userPlaylistsProvider.notifier).addTrackToPlaylist('fav_playlist', track!);
+                  } else {
+                    ref.read(userPlaylistsProvider.notifier).removeTrackFromPlaylist('fav_playlist', track!.id);
+                  }
+                },
+              ),
+
+              // 3-dots more menu
+              IconButton(
+                icon: const Icon(Icons.more_horiz_rounded, color: Colors.white70, size: 26),
+                onPressed: () {
+                  if (track != null) {
+                    showTrackOptionsSheet(context, ref, track!);
+                  }
+                },
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          _NeumorphicTogglePill(
-            icon: Icons.queue_music,
-            label: 'Queue',
-            isActive: showQueue,
-            onTap: onQueue,
-          ),
-          const SizedBox(width: 4),
-          _NeumorphicPressButton(
-            onTap: () {
-              if (track != null) {
-                showTrackOptionsSheet(context, ref, track!);
-              }
-            },
-            child: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -559,14 +653,30 @@ class _LyricsViewState extends ConsumerState<_LyricsView> {
   @override
   Widget build(BuildContext context) {
     final lyricsAsync = ref.watch(lyricsProvider(widget.track));
+    final lyricsBlur = ref.watch(lyricsBlurProvider);
 
     return lyricsAsync.when(
       data: (lyrics) {
         if (lyrics.isEmpty) {
-          return const Center(
-            child: Text(
-              'No lyrics found for this track',
-              style: TextStyle(color: Colors.white54, fontSize: 16),
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.lyrics_outlined,
+                  color: Colors.white.withValues(alpha: 0.35),
+                  size: 48,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No lyrics found for this track',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -593,36 +703,55 @@ class _LyricsViewState extends ConsumerState<_LyricsView> {
                 Colors.white,
                 Colors.transparent,
               ],
-              stops: [0.0, 0.1, 0.9, 1.0],
+              stops: [0.0, 0.08, 0.92, 1.0],
             ).createShader(bounds);
           },
           blendMode: BlendMode.dstIn,
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 80),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
             itemCount: lyrics.length,
             itemBuilder: (context, index) {
               final isActive = index == activeLine;
               final line = lyrics[index];
 
+              Widget lyricWidget = AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                style: TextStyle(
+                  fontSize: isActive ? 32 : 22,
+                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                  color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.32),
+                  height: 1.38,
+                  letterSpacing: -0.4,
+                  shadows: isActive
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            blurRadius: 16,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(line.text),
+              );
+
+              if (lyricsBlur && !isActive) {
+                lyricWidget = ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 1.4, sigmaY: 1.4),
+                  child: lyricWidget,
+                );
+              }
+
               return InkWell(
                 onTap: () {
+                  HapticFeedback.selectionClick();
                   ref.read(musicPlayerProvider.notifier).seekTo(line.timestamp);
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 250),
-                    style: TextStyle(
-                      fontSize: isActive ? 26 : 19,
-                      fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                      color: isActive ? Colors.white : Colors.white38,
-                      height: 1.45,
-                      letterSpacing: -0.3,
-                    ),
-                    child: Text(line.text),
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  child: lyricWidget,
                 ),
               );
             },
@@ -900,59 +1029,56 @@ class _ProgressSlider extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pos = state.position.inMilliseconds.toDouble();
+    final dur = (state.currentTrack?.duration.inMilliseconds ?? 1).toDouble();
+    final clamped = pos.clamp(0.0, dur > 0 ? dur : 1.0);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: SliderTheme(
-        data: SliderThemeData(
-          trackHeight: 4,
-          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-          activeTrackColor: AppColors.accent,
-          inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
-          thumbColor: AppColors.accent,
-          overlayColor: AppColors.accent.withValues(alpha: 0.15),
-        ),
-        child: Slider(
-          value: state.position.inMilliseconds.toDouble(),
-          max: (state.currentTrack?.duration.inMilliseconds ?? 1).toDouble(),
-          onChanged: (value) {
-            ref.read(musicPlayerProvider.notifier)
-                .seekTo(Duration(milliseconds: value.round()));
-          },
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Timestamps
-// ═══════════════════════════════════════════════════════════════════
-
-class _Timestamps extends StatelessWidget {
-  final NowPlayingState state;
-  const _Timestamps({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _formatDuration(state.position),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              activeTrackColor: Colors.white.withValues(alpha: 0.90),
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.18),
+              thumbColor: Colors.white,
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              overlayColor: Colors.white.withValues(alpha: 0.12),
+            ),
+            child: Slider(
+              value: clamped,
+              max: dur > 0 ? dur : 1.0,
+              onChanged: (value) {
+                ref.read(musicPlayerProvider.notifier)
+                    .seekTo(Duration(milliseconds: value.round()));
+              },
             ),
           ),
-          Text(
-            '-${_formatDuration((state.currentTrack?.duration ?? Duration.zero) - state.position)}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatDuration(state.position),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.60),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '-${_formatDuration((state.currentTrack?.duration ?? Duration.zero) - state.position)}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.60),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1142,24 +1268,16 @@ class _PlayPauseButtonState extends State<_PlayPauseButton>
           height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.accent,
-                AppColors.accentDark,
-              ],
+            color: Colors.white.withValues(alpha: _pressed ? 0.22 : 0.14),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: _pressed ? 0.40 : 0.25),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: _pressed ? 0.15 : 0.35),
-                blurRadius: _pressed ? 10 : 20,
-                spreadRadius: _pressed ? 0 : 2,
-              ),
-              BoxShadow(
-                color: AppColors.neumorphShadowDark.withValues(alpha: 0.5),
-                blurRadius: 12,
-                offset: const Offset(4, 4),
+                color: Colors.black.withValues(alpha: 0.40),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -1173,7 +1291,7 @@ class _PlayPauseButtonState extends State<_PlayPauseButton>
               widget.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
               key: ValueKey(widget.isPlaying),
               color: Colors.white,
-              size: 36,
+              size: 44,
             ),
           ),
         ),
@@ -1186,78 +1304,219 @@ class _PlayPauseButtonState extends State<_PlayPauseButton>
 // Bottom Actions Row — Neumorphic icon buttons
 // ═══════════════════════════════════════════════════════════════════
 
-class _BottomActions extends ConsumerWidget {
-  final NowPlayingState state;
-  const _BottomActions({required this.state});
+// ═══════════════════════════════════════════════════════════════════
+// Volume Slider (Screenshot 2)
+// ═══════════════════════════════════════════════════════════════════
+
+class _VolumeSlider extends ConsumerWidget {
+  const _VolumeSlider();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(musicPlayerProvider);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Volume
-          _NeumorphSmallAction(
-            icon: state.volume > 0.5
-                ? Icons.volume_up
-                : state.volume > 0
-                    ? Icons.volume_down
-                    : Icons.volume_off,
-            onTap: () => _showVolumeSheet(context, ref, state),
+          Icon(
+            Icons.volume_down_rounded,
+            color: Colors.white.withValues(alpha: 0.50),
+            size: 19,
           ),
-          // Speed
-          _NeumorphSmallAction(
-            icon: Icons.speed,
-            label: state.playbackSpeed != 1.0 ? '${state.playbackSpeed}x' : null,
-            onTap: () => _showSpeedSheet(context, ref, state),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 3.5,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.5),
+                activeTrackColor: Colors.white.withValues(alpha: 0.85),
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+                thumbColor: Colors.white,
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                overlayColor: Colors.white.withValues(alpha: 0.10),
+              ),
+              child: Slider(
+                value: state.volume.clamp(0.0, 1.0),
+                onChanged: (v) {
+                  ref.read(musicPlayerProvider.notifier).setVolume(v);
+                },
+              ),
+            ),
           ),
-          // Sleep timer
-          _NeumorphSmallAction(
-            icon: Icons.bedtime_outlined,
-            isActive: ref.watch(sleepTimerProvider) != null,
-            label: ref.watch(sleepTimerProvider) != null
-                ? '${ref.watch(sleepTimerProvider)!.inMinutes}m'
-                : null,
-            onTap: () => showSleepTimerSheet(context, ref),
-          ),
-          // Favorite
-          _NeumorphSmallAction(
-            icon: (state.currentTrack != null &&
-                    ref.watch(likedSongsProvider).contains(state.currentTrack!.id))
-                ? Icons.favorite_rounded
-                : Icons.favorite_border_rounded,
-            isActive: state.currentTrack != null &&
-                ref.watch(likedSongsProvider).contains(state.currentTrack!.id),
-            activeColor: Colors.redAccent,
-            onTap: () {
-              final track = state.currentTrack;
-              if (track == null) return;
-              final isLiked = ref.read(likedSongsProvider).contains(track.id);
-              ref.read(likedSongsProvider.notifier).toggleLike(track.id);
-              if (isLiked) {
-                ref.read(userPlaylistsProvider.notifier).removeTrackFromPlaylist('fav_playlist', track.id);
-              } else {
-                ref.read(userPlaylistsProvider.notifier).addTrackToPlaylist('fav_playlist', track);
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isLiked ? 'Removed from Liked Songs' : 'Saved to Liked Songs ❤️'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
-          // Nerd stats toggle
-          _NeumorphSmallAction(
-            icon: Icons.info_outline,
-            isActive: ref.watch(showNerdStatsProvider),
-            onTap: () {
-              ref.read(showNerdStatsProvider.notifier).state =
-                  !ref.read(showNerdStatsProvider);
-            },
+          const SizedBox(width: 8),
+          Icon(
+            Icons.volume_up_rounded,
+            color: Colors.white.withValues(alpha: 0.50),
+            size: 19,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Bottom Actions Row — Apple Music iOS Pills (Screenshot 2)
+// ═══════════════════════════════════════════════════════════════════
+
+class _BottomActions extends ConsumerWidget {
+  final NowPlayingState state;
+  final bool showLyrics;
+  final bool showQueue;
+  final VoidCallback onLyrics;
+  final VoidCallback onQueue;
+
+  const _BottomActions({
+    required this.state,
+    required this.showLyrics,
+    required this.showQueue,
+    required this.onLyrics,
+    required this.onQueue,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final intensity = ref.watch(liquidGlassIntensityProvider);
+    final opacity = ref.watch(liquidGlassOpacityProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 1. Synced Lyrics Toggle Button (Screenshot 2: speech quote pill)
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onLyrics();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: showLyrics
+                  ? AppColors.appleGlassDecoration(
+                      isDark: true,
+                      radius: 14,
+                      isSelected: true,
+                      intensity: intensity,
+                      opacity: opacity,
+                    )
+                  : BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: Colors.transparent,
+                    ),
+              child: Icon(
+                Icons.chat_bubble_rounded,
+                color: showLyrics ? Colors.white : Colors.white.withValues(alpha: 0.55),
+                size: 21,
+              ),
+            ),
+          ),
+
+          // 2. AirPlay / Audio Output Button (Screenshot 2)
+          IconButton(
+            icon: Icon(
+              Icons.airplay_rounded,
+              color: Colors.white.withValues(alpha: 0.70),
+              size: 23,
+            ),
+            onPressed: () => _showAirplaySheet(context),
+          ),
+
+          // 3. Queue List Button with infinity loop badge (Screenshot 2)
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onQueue();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: showQueue
+                  ? AppColors.appleGlassDecoration(
+                      isDark: true,
+                      radius: 14,
+                      isSelected: true,
+                      intensity: intensity,
+                      opacity: opacity,
+                    )
+                  : BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: Colors.transparent,
+                    ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    Icons.format_list_bulleted_rounded,
+                    color: showQueue ? Colors.white : Colors.white.withValues(alpha: 0.55),
+                    size: 21,
+                  ),
+                  Positioned(
+                    top: -3,
+                    right: -6,
+                    child: Icon(
+                      Icons.all_inclusive_rounded,
+                      size: 11,
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAirplaySheet(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: AppColors.appleGlassDecoration(isDark: true, radius: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Icon(Icons.airplay_rounded, color: Colors.white, size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'Audio Output & Cast',
+                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.speaker_rounded, color: Color(0xFFFA2D48)),
+              title: const Text('Internal Speaker (Hi-Res PCM)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('32-bit / 96kHz Lossless Direct', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              trailing: const Icon(Icons.check_rounded, color: Color(0xFFFA2D48)),
+              contentPadding: EdgeInsets.zero,
+              onTap: () => Navigator.pop(ctx),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bluetooth_audio_rounded, color: Colors.white70),
+              title: const Text('Bluetooth & System Default', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+              subtitle: const Text('Connected system audio session', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              contentPadding: EdgeInsets.zero,
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
       ),
     );
   }

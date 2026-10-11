@@ -13,6 +13,7 @@ import '../../data/models/app_settings.dart';
 import '../../data/models/music_models.dart';
 import '../../features/music/music_providers.dart';
 import '../../ui/widgets/glass_app_bar.dart';
+import '../../ui/widgets/liquid_glass.dart';
 
 /// Settings screen for app configuration
 /// Now with full music/audio settings
@@ -99,6 +100,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       divisions: 55,
                       onChanged: (v) =>
                           ref.read(liquidGlassOpacityProvider.notifier).state = v,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            height: 52,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFA2D48), Color(0xFF7C5CFC), Color(0xFF2563EB)],
+                              ),
+                            ),
+                          ),
+                          const LiquidGlassContainer(
+                            height: 52,
+                            radius: 20,
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Live Liquid Glass Effect Preview',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                   _SettingsTile(

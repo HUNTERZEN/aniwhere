@@ -29,6 +29,12 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     if (track == null) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glassEnabled = ref.watch(liquidGlassProvider);
+    final intensity = ref.watch(liquidGlassIntensityProvider);
+    final opacity = ref.watch(liquidGlassOpacityProvider);
+    final sigma = glassEnabled ? intensity : 0.001;
+    final alpha = glassEnabled ? opacity : 0.85;
+
     final contentColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white70 : Colors.black54;
 
@@ -109,16 +115,16 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(31),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xB812121C)
-                    : Colors.white.withValues(alpha: 0.88),
+                    ? const Color(0xFF12121C).withValues(alpha: alpha)
+                    : Colors.white.withValues(alpha: alpha),
                 borderRadius: BorderRadius.circular(31),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.18)
+                      ? Colors.white.withValues(alpha: 0.18 + (alpha * 0.12))
                       : Colors.black.withValues(alpha: 0.08),
                   width: 0.9,
                 ),

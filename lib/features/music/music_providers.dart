@@ -504,6 +504,9 @@ final liquidGlassOpacityProvider =
   return PersistentDoubleNotifier('liquid_glass_opacity', 0.35);
 });
 
+/// Docked bottom capsule mode on scroll down (Apple Music iOS style)
+final isDockedCapsuleProvider = StateProvider<bool>((ref) => false);
+
 /// In-app dynamic island floating music capsule toggle
 final dynamicIslandEnabledProvider =
     StateNotifierProvider<PersistentBoolNotifier, bool>((ref) {
