@@ -174,6 +174,18 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
                 ),
 
                 _ActionTile(
+                  icon: Icons.download_rounded,
+                  title: 'Download Music',
+                  subtitle: ref.watch(downloadedTracksProvider).containsKey(track.id)
+                      ? 'Downloaded (${ref.watch(downloadedTracksProvider)[track.id]!.label})'
+                      : 'Download in Lossless, High, or Low quality',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDownloadMusicQualitySheet(context, ref, track);
+                  },
+                ),
+
+                _ActionTile(
                   icon: Icons.high_quality_rounded,
                   title: 'Audio Quality',
                   subtitle: 'Current: ${ref.watch(audioQualityWifiProvider).name.toUpperCase()}',
@@ -936,4 +948,321 @@ class _ActionTile extends StatelessWidget {
       onTap: onTap,
     );
   }
+}
+
+/// Modal bottom sheet to select download quality (Lossless, High, Low) and download music
+void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTrack track) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final useGlass = ref.read(liquidGlassProvider);
+  final intensity = ref.read(liquidGlassIntensityProvider);
+  final opacity = ref.read(liquidGlassOpacityProvider);
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) => Consumer(
+      builder: (context, ref, _) {
+        final downloadedMap = ref.watch(downloadedTracksProvider);
+        final isDownloaded = downloadedMap.containsKey(track.id);
+        final currentQuality = downloadedMap[track.id] ?? ref.watch(downloadQualityProvider);
+
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: useGlass ? intensity : 0.01,
+              sigmaY: useGlass ? intensity : 0.01,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF141418).withValues(alpha: opacity)
+                    : Colors.white.withValues(alpha: opacity),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15 + (opacity * 0.1))
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Top drag handle
+                    Container(
+                      width: 40,
+                      height: 4.5,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black26,
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+
+                    // Header with track info
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: track.albumArtUrl != null
+                                ? CachedNetworkImage(
+                                    imageUrl: track.albumArtUrl!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => _artFallback(isDark),
+                                  )
+                                : _artFallback(isDark),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  track.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  track.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDark ? Colors.white60 : Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: isDownloaded
+                                  ? const Color(0xFFFA2D48).withValues(alpha: 0.15)
+                                  : AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                                  size: 16,
+                                  color: isDownloaded ? const Color(0xFFFA2D48) : AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isDownloaded ? 'Downloaded' : 'Download',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDownloaded ? const Color(0xFFFA2D48) : AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Divider(height: 24),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Select Download Quality',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Quality Options: Lossless, High, Low
+                    ...[
+                      DownloadQuality.lossless,
+                      DownloadQuality.high,
+                      DownloadQuality.low,
+                    ].map((q) {
+                      final isSelected = isDownloaded
+                          ? currentQuality == q
+                          : ref.watch(downloadQualityProvider) == q;
+
+                      IconData qIcon;
+                      String qBadge;
+                      Color qColor;
+
+                      switch (q) {
+                        case DownloadQuality.lossless:
+                          qIcon = Icons.album_rounded;
+                          qBadge = 'FLAC · Bit-perfect';
+                          qColor = const Color(0xFFFA2D48);
+                          break;
+                        case DownloadQuality.high:
+                          qIcon = Icons.headphones_rounded;
+                          qBadge = '320 kbps · High Quality';
+                          qColor = const Color(0xFF6C5CE7);
+                          break;
+                        case DownloadQuality.low:
+                          qIcon = Icons.data_saver_on_rounded;
+                          qBadge = '128 kbps · Low / Data Saver';
+                          qColor = const Color(0xFF00B894);
+                          break;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            ref.read(downloadQualityProvider.notifier).state = q;
+                            ref.read(downloadedTracksProvider.notifier).downloadTrack(track.id, q);
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.download_done_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text('Downloaded "${track.title}" in ${q.label} quality (${q.perTrack})'),
+                                    ),
+                                  ],
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: const Color(0xFF1E1E26),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? qColor.withValues(alpha: 0.15)
+                                  : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? qColor.withValues(alpha: 0.6) : Colors.transparent,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: qColor.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(qIcon, color: qColor, size: 22),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            q.label,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15.5,
+                                              color: isDark ? Colors.white : Colors.black,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: qColor.withValues(alpha: 0.18),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              qBadge,
+                                              style: TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: qColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${q.detail} · ${q.perTrack}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark ? Colors.white60 : Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle_rounded, color: qColor, size: 22)
+                                else
+                                  Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? Colors.white30 : Colors.black26),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    if (isDownloaded) ...[
+                      const SizedBox(height: 10),
+                      TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(downloadedTracksProvider.notifier).removeDownload(track.id);
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Removed "${track.title}" from downloads'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                        label: const Text(
+                          'Remove Download',
+                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }

@@ -82,7 +82,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   bool _isSearching = false;
 
   final List<_LibraryTab> _tabs = [
-    const _LibraryTab('All', null),
     const _LibraryTab('Music', null, isMusic: true),
     const _LibraryTab('Manga', MediaType.manga),
     const _LibraryTab('Anime', MediaType.anime),

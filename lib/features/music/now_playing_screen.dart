@@ -402,6 +402,30 @@ class _TopBar extends ConsumerWidget {
                 },
               ),
 
+              // Download Music Button (with Lossless, High, Low options)
+              Consumer(
+                builder: (context, ref, _) {
+                  final downloaded = ref.watch(downloadedTracksProvider);
+                  final isDownloaded = track != null && downloaded.containsKey(track!.id);
+                  return IconButton(
+                    tooltip: isDownloaded
+                        ? 'Downloaded (${downloaded[track!.id]?.label})'
+                        : 'Download Song',
+                    icon: Icon(
+                      isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                      color: isDownloaded ? const Color(0xFFFA2D48) : Colors.white70,
+                      size: 26,
+                    ),
+                    onPressed: () {
+                      if (track != null) {
+                        HapticFeedback.lightImpact();
+                        showDownloadMusicQualitySheet(context, ref, track!);
+                      }
+                    },
+                  );
+                },
+              ),
+
               // 3-dots more menu
               IconButton(
                 icon: const Icon(Icons.more_horiz_rounded, color: Colors.white70, size: 26),
@@ -1381,7 +1405,7 @@ class _BottomActions extends ConsumerWidget {
     final opacity = ref.watch(liquidGlassOpacityProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1412,6 +1436,62 @@ class _BottomActions extends ConsumerWidget {
                 size: 21,
               ),
             ),
+          ),
+
+          // 2. Download Music Button (Offline Lossless, High, or Low)
+          Consumer(
+            builder: (context, ref, _) {
+              final track = state.currentTrack;
+              final downloaded = ref.watch(downloadedTracksProvider);
+              final isDownloaded = track != null && downloaded.containsKey(track.id);
+              final quality = isDownloaded ? downloaded[track.id] : null;
+
+              return GestureDetector(
+                onTap: () {
+                  if (track != null) {
+                    HapticFeedback.lightImpact();
+                    showDownloadMusicQualitySheet(context, ref, track);
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: isDownloaded
+                      ? AppColors.appleGlassDecoration(
+                          isDark: true,
+                          radius: 14,
+                          isSelected: true,
+                          intensity: intensity,
+                          opacity: opacity,
+                        )
+                      : BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.transparent,
+                        ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                        color: isDownloaded ? Colors.white : Colors.white.withValues(alpha: 0.55),
+                        size: 21,
+                      ),
+                      if (isDownloaded && quality != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          quality.label.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
 
           // 2. AirPlay / Audio Output Button (Screenshot 2)

@@ -573,6 +573,53 @@ final downloadQualityProvider =
   return PersistentEnumNotifier('download_quality', DownloadQuality.lossless, DownloadQuality.values);
 });
 
+/// Downloaded music tracks map: trackId -> DownloadQuality (persisted)
+class DownloadedTracksNotifier extends StateNotifier<Map<String, DownloadQuality>> {
+  static const _storageKey = 'downloaded_tracks_map';
+
+  DownloadedTracksNotifier() : super(_load());
+
+  static Map<String, DownloadQuality> _load() {
+    final raw = SettingsStorage.getString(_storageKey, defaultValue: '{}');
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(
+        k,
+        DownloadQuality.values.firstWhere(
+          (q) => q.name == v,
+          orElse: () => DownloadQuality.lossless,
+        ),
+      ));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void downloadTrack(String trackId, DownloadQuality quality) {
+    final updated = Map<String, DownloadQuality>.from(state);
+    updated[trackId] = quality;
+    state = updated;
+    _save();
+  }
+
+  void removeDownload(String trackId) {
+    final updated = Map<String, DownloadQuality>.from(state);
+    updated.remove(trackId);
+    state = updated;
+    _save();
+  }
+
+  void _save() {
+    final map = state.map((k, v) => MapEntry(k, v.name));
+    SettingsStorage.setString(_storageKey, jsonEncode(map));
+  }
+}
+
+final downloadedTracksProvider =
+    StateNotifierProvider<DownloadedTracksNotifier, Map<String, DownloadQuality>>((ref) {
+  return DownloadedTracksNotifier();
+});
+
 /// Bottom navigation bar & mini player visibility on user scroll
 final isBottomBarVisibleProvider = StateProvider<bool>((ref) => true);
 

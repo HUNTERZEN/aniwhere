@@ -185,9 +185,9 @@ enum AudioQuality {
 
 /// Download quality levels
 enum DownloadQuality {
-  standard(label: 'Standard', detail: '~128 kbps · fits more', perTrack: '~4 MB'),
-  high(label: 'High', detail: 'Best on offer', perTrack: '~8 MB'),
-  lossless(label: 'Lossless', detail: 'Bit-exact if available', perTrack: '~35 MB');
+  low(label: 'Low', detail: '~64-128 kbps · saves data', perTrack: '~3 MB'),
+  high(label: 'High', detail: '~256-320 kbps · high quality', perTrack: '~8 MB'),
+  lossless(label: 'Lossless', detail: 'FLAC / 24-bit · bit-perfect', perTrack: '~35 MB');
 
   final String label;
   final String detail;

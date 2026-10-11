@@ -109,10 +109,10 @@ class HomeScreen extends ConsumerWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location == AppRouter.music) return 0;
-    if (location == AppRouter.browse) return 1;
-    if (location == AppRouter.home || location == AppRouter.library) return 2;
-    if (location == AppRouter.settings) return 3;
-    if (location == AppRouter.search) return 4;
+    if (location == AppRouter.search) return 1;
+    if (location == AppRouter.browse) return 2;
+    if (location == AppRouter.home || location == AppRouter.library) return 3;
+    if (location == AppRouter.settings) return 4;
     return 0;
   }
 
@@ -129,16 +129,16 @@ class HomeScreen extends ConsumerWidget {
         context.go(AppRouter.music);
         break;
       case 1:
-        context.go(AppRouter.browse);
+        context.go(AppRouter.search);
         break;
       case 2:
-        context.go(AppRouter.home);
+        context.go(AppRouter.browse);
         break;
       case 3:
-        context.go(AppRouter.settings);
+        context.go(AppRouter.home);
         break;
       case 4:
-        context.go(AppRouter.search);
+        context.go(AppRouter.settings);
         break;
     }
   }
@@ -371,7 +371,7 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
             alpha: alpha,
             onTap: () {
               HapticFeedback.lightImpact();
-              widget.onTabSelected(4);
+              widget.onTabSelected(1);
             },
           ),
         ],
@@ -498,7 +498,7 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
                         ),
                       ),
 
-                      // ── All 5 Tab Destinations (Screenshot 1) ──
+                      // ── All 5 Tab Destinations (Home, Search, Manga, Library, Settings) ──
                       Row(
                         children: [
                           _NeumorphTabItem(
@@ -517,9 +517,9 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
                             },
                           ),
                           _NeumorphTabItem(
-                            icon: Icons.grid_view_outlined,
-                            activeIcon: Icons.grid_view_rounded,
-                            label: 'New',
+                            icon: Icons.search_outlined,
+                            activeIcon: Icons.search_rounded,
+                            label: 'Search',
                             isSelected: _isDragging
                                 ? _hoverIndex == 1
                                 : widget.selectedIndex == 1,
@@ -531,9 +531,9 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
                             },
                           ),
                           _NeumorphTabItem(
-                            icon: Icons.sensors_outlined,
-                            activeIcon: Icons.sensors_rounded,
-                            label: 'Radio',
+                            icon: Icons.auto_stories_outlined,
+                            activeIcon: Icons.auto_stories_rounded,
+                            label: 'Manga',
                             isSelected: _isDragging
                                 ? _hoverIndex == 2
                                 : widget.selectedIndex == 2,
@@ -545,8 +545,8 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
                             },
                           ),
                           _NeumorphTabItem(
-                            icon: Icons.library_music_outlined,
-                            activeIcon: Icons.library_music_rounded,
+                            icon: Icons.video_library_outlined,
+                            activeIcon: Icons.video_library_rounded,
                             label: 'Library',
                             isSelected: _isDragging
                                 ? _hoverIndex == 3
@@ -559,9 +559,9 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
                             },
                           ),
                           _NeumorphTabItem(
-                            icon: Icons.search_outlined,
-                            activeIcon: Icons.search_rounded,
-                            label: 'Search',
+                            icon: Icons.settings_outlined,
+                            activeIcon: Icons.settings_rounded,
+                            label: 'Settings',
                             isSelected: _isDragging
                                 ? _hoverIndex == 4
                                 : widget.selectedIndex == 4,
