@@ -10,7 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../features/music/mini_player.dart';
 import '../../features/music/music_providers.dart';
 
-/// Main screen with unified BitChord Liquid Glass navigation bar and fluid auto-hide on scroll
+/// Main screen with Neumorphic navigation bar and fluid auto-hide on scroll
 class HomeScreen extends ConsumerWidget {
   final Widget child;
 
@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
     required this.child,
   });
 
-  static const double _navBarHeight = 62.0;
+  static const double _navBarHeight = 66.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +30,6 @@ class HomeScreen extends ConsumerWidget {
     final isBarVisible = ref.watch(isBottomBarVisibleProvider);
 
     final navBottomMargin = bottomPadding > 0 ? bottomPadding : 16.0;
-    // Mini player floats cleanly above the bottom navigation bar with 10px spacing
     final miniPlayerBottom = navBottomMargin + _navBarHeight + 10.0;
 
     return Scaffold(
@@ -38,12 +37,10 @@ class HomeScreen extends ConsumerWidget {
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           if (notification.direction == ScrollDirection.reverse) {
-            // User scrolling down -> content moving up -> hide player & nav bar
             if (ref.read(isBottomBarVisibleProvider)) {
               ref.read(isBottomBarVisibleProvider.notifier).state = false;
             }
           } else if (notification.direction == ScrollDirection.forward) {
-            // User scrolling up -> content moving down -> restore player & nav bar
             if (!ref.read(isBottomBarVisibleProvider)) {
               ref.read(isBottomBarVisibleProvider.notifier).state = true;
             }
@@ -54,31 +51,39 @@ class HomeScreen extends ConsumerWidget {
           children: [
             child,
 
-            // Floating Liquid Glass Mini Player (fluidly slides down on scroll down)
+            // Floating Neumorphic Mini Player
             if (playerState.hasTrack)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: miniPlayerBottom,
                 child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeInOutCubic,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutCubic,
                   offset: isBarVisible ? Offset.zero : const Offset(0, 2.8),
-                  child: const MiniPlayer(),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: isBarVisible ? 1.0 : 0.0,
+                    child: const MiniPlayer(),
+                  ),
                 ),
               ),
           ],
         ),
       ),
       bottomNavigationBar: AnimatedSlide(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
         offset: isBarVisible ? Offset.zero : const Offset(0, 1.5),
-        child: _BitChordLiquidGlassNavBar(
-          selectedIndex: selectedIndex,
-          isDark: isDark,
-          isPlaying: playerState.isPlaying,
-          onTabSelected: (index) => _onItemTapped(context, ref, index),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          opacity: isBarVisible ? 1.0 : 0.0,
+          child: _NeumorphicNavBar(
+            selectedIndex: selectedIndex,
+            isDark: isDark,
+            isPlaying: playerState.isPlaying,
+            onTabSelected: (index) => _onItemTapped(context, ref, index),
+          ),
         ),
       ),
     );
@@ -95,7 +100,6 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _onItemTapped(BuildContext context, WidgetRef ref, int index) {
-    // Restore bottom bar visibility on tab switch
     ref.read(isBottomBarVisibleProvider.notifier).state = true;
 
     final shellNavigator = AppRouter.shellNavigatorKey.currentState;
@@ -123,16 +127,14 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Unified BitChord Liquid Glass Floating Navigation Bar (5 tabs in one pill)
-/// Features translucent frosted glass blur, specular edge highlight,
-/// and liquid stretch/squash traveling lens indicator with spring physics.
-class _BitChordLiquidGlassNavBar extends ConsumerStatefulWidget {
+/// Neumorphic Floating Navigation Bar with spring-physics traveling indicator
+class _NeumorphicNavBar extends ConsumerStatefulWidget {
   final int selectedIndex;
   final bool isDark;
   final bool isPlaying;
   final ValueChanged<int> onTabSelected;
 
-  const _BitChordLiquidGlassNavBar({
+  const _NeumorphicNavBar({
     required this.selectedIndex,
     required this.isDark,
     required this.isPlaying,
@@ -140,13 +142,11 @@ class _BitChordLiquidGlassNavBar extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_BitChordLiquidGlassNavBar> createState() => _BitChordLiquidGlassNavBarState();
+  ConsumerState<_NeumorphicNavBar> createState() => _NeumorphicNavBarState();
 }
 
-class _BitChordLiquidGlassNavBarState extends ConsumerState<_BitChordLiquidGlassNavBar> {
+class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
   static const int _tabCount = 5;
-  static const double _stretch = 0.16;
-  static const double _squash = 0.50;
 
   bool _isDragging = false;
   double _dragX = 0.0;
@@ -159,7 +159,7 @@ class _BitChordLiquidGlassNavBarState extends ConsumerState<_BitChordLiquidGlass
   }
 
   @override
-  void didUpdateWidget(covariant _BitChordLiquidGlassNavBar oldWidget) {
+  void didUpdateWidget(covariant _NeumorphicNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_isDragging && oldWidget.selectedIndex != widget.selectedIndex) {
       if (widget.selectedIndex < _tabCount) {
@@ -219,69 +219,49 @@ class _BitChordLiquidGlassNavBarState extends ConsumerState<_BitChordLiquidGlass
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final marginBottom = bottomPadding > 0 ? bottomPadding : 16.0;
 
-    final useGlass = ref.watch(liquidGlassProvider);
-    final intensity = ref.watch(liquidGlassIntensityProvider);
-    final opacity = ref.watch(liquidGlassOpacityProvider);
     final reduceAnim = ref.watch(reduceAnimationProvider);
 
-    // Liquid surface background tint
+    // AMOLED Liquid Glass base color
     final glassColor = isDark
-        ? Color(0xFF101014).withValues(alpha: opacity.clamp(0.15, 0.65))
-        : Colors.white.withValues(alpha: (opacity * 1.3).clamp(0.20, 0.75));
-
-    final solidColor = isDark ? const Color(0xFF18181C) : Colors.white;
+        ? const Color(0x99101014)
+        : Colors.white.withValues(alpha: 0.85);
 
     return Container(
       margin: EdgeInsets.only(
-        left: 14,
-        right: 14,
+        left: 16,
+        right: 16,
         bottom: marginBottom,
       ),
-      height: 62,
+      height: 66,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(31),
+        borderRadius: BorderRadius.circular(33),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.15),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(31),
+        borderRadius: BorderRadius.circular(33),
         child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: useGlass ? intensity : 0.01,
-            sigmaY: useGlass ? intensity : 0.01,
-          ),
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
             decoration: BoxDecoration(
-              color: useGlass ? glassColor : solidColor,
-              borderRadius: BorderRadius.circular(31),
+              color: glassColor,
+              borderRadius: BorderRadius.circular(33),
               border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 0.8,
+                color: isDark ? Colors.white.withValues(alpha: 0.18) : Colors.black.withValues(alpha: 0.08),
+                width: 1.0,
               ),
-              gradient: useGlass
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: isDark ? 0.22 : 0.40),
-                        Colors.white.withValues(alpha: isDark ? 0.04 : 0.10),
-                      ],
-                    )
-                  : null,
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final totalWidth = constraints.maxWidth;
                 final tabWidth = totalWidth / _tabCount;
-                const pillWidth = 54.0;
-                const pillHeight = 46.0;
+                const pillWidth = 52.0;
+                const pillHeight = 44.0;
 
                 final normalPillLeft = widget.selectedIndex < _tabCount
                     ? widget.selectedIndex * tabWidth + (tabWidth - pillWidth) / 2
@@ -299,135 +279,124 @@ class _BitChordLiquidGlassNavBarState extends ConsumerState<_BitChordLiquidGlass
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // ── Liquid Glass Active Lens (Travelling Pill) ──
+                      // ── Liquid Glass Active Indicator ──
                       AnimatedPositioned(
-                        duration: (_isDragging || reduceAnim)
-                            ? Duration.zero
-                            : const Duration(milliseconds: 320),
-                        curve: Curves.easeOutBack,
+                        duration: _isDragging
+                            ? const Duration(milliseconds: 30)
+                            : (reduceAnim ? Duration.zero : const Duration(milliseconds: 380)),
+                        curve: _isDragging ? Curves.linear : Curves.easeOutBack,
                         left: activePillLeft,
-                        width: pillWidth * (1.0 + (_isDragging ? _stretch : 0.0)),
-                        height: pillHeight * (1.0 - (_isDragging ? _stretch * _squash : 0.0)),
-                        child: Container(
+                        width: pillWidth,
+                        height: pillHeight,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(23),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: isDark
-                                  ? [
-                                      Colors.white.withValues(alpha: 0.22),
-                                      Colors.white.withValues(alpha: 0.08),
-                                    ]
-                                  : [
-                                      Colors.black.withValues(alpha: 0.12),
-                                      Colors.black.withValues(alpha: 0.04),
-                                    ],
-                            ),
+                            borderRadius: BorderRadius.circular(22),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : Colors.black.withValues(alpha: 0.08),
                             border: Border.all(
                               color: isDark
                                   ? Colors.white.withValues(alpha: 0.35)
-                                  : Colors.black.withValues(alpha: 0.15),
-                              width: 0.8,
+                                  : Colors.black.withValues(alpha: 0.12),
+                              width: 1.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: isDark
-                                    ? Colors.black.withValues(alpha: 0.3)
-                                    : Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
+                                color: AppColors.accent.withValues(alpha: 0.30),
+                                blurRadius: 12,
+                                spreadRadius: 0.5,
                               ),
                             ],
                           ),
                         ),
                       ),
 
-                      // ── All 5 Tab Destinations ──
-                      Row(
-                        children: [
-                          _LiquidTabItem(
-                            icon: Icons.music_note_outlined,
-                            activeIcon: Icons.music_note_rounded,
-                            label: 'Music',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 0
-                                : widget.selectedIndex == 0,
-                            isDark: isDark,
-                            hasGlow: widget.isPlaying,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(0);
-                            },
-                          ),
-                          _LiquidTabItem(
-                            icon: Icons.collections_bookmark_outlined,
-                            activeIcon: Icons.collections_bookmark_rounded,
-                            label: 'Library',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 1
-                                : widget.selectedIndex == 1,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(1);
-                            },
-                          ),
-                          _LiquidTabItem(
-                            icon: Icons.explore_outlined,
-                            activeIcon: Icons.explore_rounded,
-                            label: 'Browse',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 2
-                                : widget.selectedIndex == 2,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(2);
-                            },
-                          ),
-                          _LiquidTabItem(
-                            icon: Icons.tune_outlined,
-                            activeIcon: Icons.tune_rounded,
-                            label: 'Settings',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 3
-                                : widget.selectedIndex == 3,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(3);
-                            },
-                          ),
-                          _LiquidTabItem(
-                            icon: Icons.search_outlined,
-                            activeIcon: Icons.search_rounded,
-                            label: 'Search',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 4
-                                : widget.selectedIndex == 4,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(4);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
+                // ── All 5 Tab Destinations ──
+                Row(
+                  children: [
+                    _NeumorphTabItem(
+                      icon: Icons.music_note_outlined,
+                      activeIcon: Icons.music_note_rounded,
+                      label: 'Music',
+                      isSelected: _isDragging
+                          ? _hoverIndex == 0
+                          : widget.selectedIndex == 0,
+                      isDark: isDark,
+                      hasGlow: widget.isPlaying,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTabSelected(0);
+                      },
+                    ),
+                    _NeumorphTabItem(
+                      icon: Icons.collections_bookmark_outlined,
+                      activeIcon: Icons.collections_bookmark_rounded,
+                      label: 'Library',
+                      isSelected: _isDragging
+                          ? _hoverIndex == 1
+                          : widget.selectedIndex == 1,
+                      isDark: isDark,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTabSelected(1);
+                      },
+                    ),
+                    _NeumorphTabItem(
+                      icon: Icons.explore_outlined,
+                      activeIcon: Icons.explore_rounded,
+                      label: 'Browse',
+                      isSelected: _isDragging
+                          ? _hoverIndex == 2
+                          : widget.selectedIndex == 2,
+                      isDark: isDark,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTabSelected(2);
+                      },
+                    ),
+                    _NeumorphTabItem(
+                      icon: Icons.tune_outlined,
+                      activeIcon: Icons.tune_rounded,
+                      label: 'Settings',
+                      isSelected: _isDragging
+                          ? _hoverIndex == 3
+                          : widget.selectedIndex == 3,
+                      isDark: isDark,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTabSelected(3);
+                      },
+                    ),
+                    _NeumorphTabItem(
+                      icon: Icons.search_outlined,
+                      activeIcon: Icons.search_rounded,
+                      label: 'Search',
+                      isSelected: _isDragging
+                          ? _hoverIndex == 4
+                          : widget.selectedIndex == 4,
+                      isDark: isDark,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onTabSelected(4);
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-        ),
+          );
+        },
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }
 
-/// Navigation item inside the fluid liquid glass bar
-class _LiquidTabItem extends StatelessWidget {
+/// Navigation tab item with animated scale + color transitions
+class _NeumorphTabItem extends StatefulWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
@@ -436,7 +405,7 @@ class _LiquidTabItem extends StatelessWidget {
   final bool hasGlow;
   final VoidCallback onTap;
 
-  const _LiquidTabItem({
+  const _NeumorphTabItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
@@ -447,61 +416,101 @@ class _LiquidTabItem extends StatelessWidget {
   });
 
   @override
+  State<_NeumorphTabItem> createState() => _NeumorphTabItemState();
+}
+
+class _NeumorphTabItemState extends State<_NeumorphTabItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final selectedColor = isDark ? Colors.white : Colors.black;
-    final unselectedColor = isDark ? Colors.white60 : Colors.black54;
+    final accentColor = AppColors.accent;
+    final selectedColor = widget.isSelected ? accentColor : (widget.isDark ? Colors.white60 : Colors.black54);
 
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: SizedBox(
-          height: 62,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    isSelected ? activeIcon : icon,
-                    size: 22,
-                    color: isSelected ? selectedColor : unselectedColor,
-                  ),
-                  if (hasGlow && isSelected)
-                    Positioned(
-                      top: -2,
-                      right: -3,
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.8),
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
+        onTapDown: (_) => _scaleController.forward(),
+        onTapUp: (_) {
+          _scaleController.reverse();
+          widget.onTap();
+        },
+        onTapCancel: () => _scaleController.reverse(),
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: SizedBox(
+            height: 66,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        widget.isSelected ? widget.activeIcon : widget.icon,
+                        key: ValueKey(widget.isSelected),
+                        size: 22,
+                        color: selectedColor,
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? selectedColor : unselectedColor,
-                  letterSpacing: -0.2,
+                    if (widget.hasGlow && widget.isSelected)
+                      Positioned(
+                        top: -2,
+                        right: -3,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: accentColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.8),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 3),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: selectedColor,
+                    letterSpacing: -0.2,
+                  ),
+                  child: Text(widget.label),
+                ),
+              ],
+            ),
           ),
         ),
       ),

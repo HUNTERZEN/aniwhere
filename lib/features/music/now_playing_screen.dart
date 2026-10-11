@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -51,7 +52,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.bgDark,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -67,7 +68,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
               child: ImageFiltered(
                 imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
                 child: Opacity(
-                  opacity: 0.25,
+                  opacity: 0.20,
                   child: CachedNetworkImage(
                     imageUrl: track.albumArtUrl!,
                     fit: BoxFit.cover,
@@ -84,8 +85,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                 // ── Top bar ──
                 _TopBar(
                   onClose: () => Navigator.pop(context),
-                  onLyrics: () => setState(() => _showLyrics = !_showLyrics),
-                  onQueue: () => setState(() => _showQueue = !_showQueue),
+                  onLyrics: () => setState(() {
+                    _showLyrics = !_showLyrics;
+                    if (_showLyrics) _showQueue = false;
+                  }),
+                  onQueue: () => setState(() {
+                    _showQueue = !_showQueue;
+                    if (_showQueue) _showLyrics = false;
+                  }),
                   showLyrics: _showLyrics,
                   showQueue: _showQueue,
                   track: state.currentTrack,
@@ -97,15 +104,30 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.05),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        ),
+                      );
+                    },
                     child: _showLyrics
-                        ? _LyricsView(track: track, position: state.position)
+                        ? _LyricsView(key: const ValueKey('lyrics'), track: track, position: state.position)
                         : _showQueue
-                            ? _QueueView()
-                            : _ArtworkView(track: track),
+                            ? _QueueView(key: const ValueKey('queue'))
+                            : _ArtworkView(key: const ValueKey('artwork'), track: track),
                   ),
                 ),
 
-                // ── Nerd stats (codec, bitrate, sample rate) ──
+                // ── Nerd stats ──
                 if (showStats)
                   _NerdStats(track: track),
 
@@ -114,7 +136,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
                 const SizedBox(height: 8),
 
-                // ── Thin slider (progress bar) ──
+                // ── Progress slider ──
                 _ProgressSlider(state: state),
 
                 const SizedBox(height: 4),
@@ -129,7 +151,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
                 const SizedBox(height: 12),
 
-                // ── Bottom actions (volume, speed, etc.) ──
+                // ── Bottom actions ──
                 _BottomActions(state: state),
 
                 const SizedBox(height: 16),
@@ -157,12 +179,12 @@ class _MeshGradientBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     if (reduceAnimation) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF1a0a2e),
-              Color(0xFF0a0a1a),
-              Color(0xFF0e061a),
+              AppColors.bgDark,
+              const Color(0xFF151528),
+              AppColors.bgDark,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -194,28 +216,28 @@ class _MeshPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Base dark
+    // Base — neumorphic dark
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = const Color(0xFF0a0a14),
+      Paint()..color = AppColors.bgDark,
     );
 
-    // Animated blobs
+    // Animated blobs with accent colors
     final blobs = [
       _Blob(
-        color: AppColors.primary.withValues(alpha: 0.25),
+        color: AppColors.accent.withValues(alpha: 0.18),
         cx: w * (0.3 + 0.15 * sin(t * 2 * pi)),
         cy: h * (0.25 + 0.1 * cos(t * 2 * pi * 0.7)),
         r: w * 0.45,
       ),
       _Blob(
-        color: AppColors.accent.withValues(alpha: 0.18),
+        color: AppColors.accentLight.withValues(alpha: 0.10),
         cx: w * (0.7 + 0.12 * cos(t * 2 * pi * 1.3)),
         cy: h * (0.6 + 0.15 * sin(t * 2 * pi * 0.5)),
         r: w * 0.5,
       ),
       _Blob(
-        color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+        color: const Color(0xFF2563EB).withValues(alpha: 0.08),
         cx: w * (0.5 + 0.2 * sin(t * 2 * pi * 0.9 + 1)),
         cy: h * (0.8 + 0.08 * cos(t * 2 * pi * 0.6)),
         r: w * 0.4,
@@ -269,32 +291,33 @@ class _TopBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 30),
-            onPressed: onClose,
+          // Close button — neumorphic circle
+          _NeumorphicPressButton(
+            onTap: onClose,
+            child: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 26),
           ),
           const Spacer(),
-          _GlassPill(
+          _NeumorphicTogglePill(
             icon: Icons.lyrics,
             label: 'Lyrics',
             isActive: showLyrics,
             onTap: onLyrics,
           ),
           const SizedBox(width: 8),
-          _GlassPill(
+          _NeumorphicTogglePill(
             icon: Icons.queue_music,
             label: 'Queue',
             isActive: showQueue,
             onTap: onQueue,
           ),
           const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white70),
-            onPressed: () {
+          _NeumorphicPressButton(
+            onTap: () {
               if (track != null) {
                 showTrackOptionsSheet(context, ref, track!);
               }
             },
+            child: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
           ),
         ],
       ),
@@ -302,13 +325,15 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-class _GlassPill extends StatelessWidget {
+/// Neumorphic toggle pill — replaces the broken white _GlassPill
+/// Active state: inset shadow + accent glow (not a solid white pill!)
+class _NeumorphicTogglePill extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _GlassPill({
+  const _NeumorphicTogglePill({
     required this.icon,
     required this.label,
     required this.isActive,
@@ -316,54 +341,128 @@ class _GlassPill extends StatelessWidget {
   });
 
   @override
+  State<_NeumorphicTogglePill> createState() => _NeumorphicTogglePillState();
+}
+
+class _NeumorphicTogglePillState extends State<_NeumorphicTogglePill>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive
-                ? AppColors.primary.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.1),
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: AppColors.appleGlassDecoration(
+            isDark: true,
+            radius: 20,
+            isSelected: widget.isActive,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isActive ? AppColors.primary : Colors.white70,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isActive ? AppColors.primary : Colors.white70,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                size: 16,
+                color: widget.isActive ? AppColors.accentLight : Colors.white70,
               ),
-            ),
-          ],
+              const SizedBox(width: 5),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: widget.isActive ? AppColors.accentLight : Colors.white70,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// Small Apple Music liquid glass press button (circle)
+class _NeumorphicPressButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _NeumorphicPressButton({
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  State<_NeumorphicPressButton> createState() => _NeumorphicPressButtonState();
+}
+
+class _NeumorphicPressButtonState extends State<_NeumorphicPressButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: AppColors.appleGlassCircle(
+          isDark: true,
+          isPressed: _pressed,
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
-// Artwork View with animated album art
+// Artwork View
 // ═══════════════════════════════════════════════════════════════════
 
 class _ArtworkView extends StatelessWidget {
   final MusicTrack track;
-  const _ArtworkView({required this.track});
+  const _ArtworkView({super.key, required this.track});
 
   @override
   Widget build(BuildContext context) {
@@ -374,12 +473,22 @@ class _ArtworkView extends StatelessWidget {
           width: 300,
           height: 300,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.25),
+                color: AppColors.accent.withValues(alpha: 0.35),
                 blurRadius: 40,
-                spreadRadius: 5,
+                spreadRadius: 4,
+                offset: const Offset(0, 12),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.60),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -408,14 +517,14 @@ class _ArtworkView extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Lyrics View — synced lyrics with blur effect 
+// Lyrics View
 // ═══════════════════════════════════════════════════════════════════
 
 class _LyricsView extends ConsumerStatefulWidget {
   final MusicTrack track;
   final Duration position;
 
-  const _LyricsView({required this.track, required this.position});
+  const _LyricsView({super.key, required this.track, required this.position});
 
   @override
   ConsumerState<_LyricsView> createState() => _LyricsViewState();
@@ -520,8 +629,8 @@ class _LyricsViewState extends ConsumerState<_LyricsView> {
           ),
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
       ),
       error: (e, _) => const Center(
         child: Text('Could not load lyrics', style: TextStyle(color: Colors.white54)),
@@ -535,6 +644,8 @@ class _LyricsViewState extends ConsumerState<_LyricsView> {
 // ═══════════════════════════════════════════════════════════════════
 
 class _QueueView extends ConsumerWidget {
+  const _QueueView({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(musicPlayerProvider);
@@ -592,7 +703,7 @@ class _QueueView extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isCurrent ? AppColors.primary : Colors.white,
+                    color: isCurrent ? AppColors.accent : Colors.white,
                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -602,12 +713,12 @@ class _QueueView extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isCurrent ? AppColors.primary.withValues(alpha: 0.7) : Colors.white38,
+                    color: isCurrent ? AppColors.accent.withValues(alpha: 0.7) : Colors.white38,
                     fontSize: 12,
                   ),
                 ),
                 trailing: isCurrent
-                    ? const Icon(Icons.equalizer, color: AppColors.primary, size: 20)
+                    ? Icon(Icons.equalizer, color: AppColors.accent, size: 20)
                     : const Icon(Icons.drag_handle, color: Colors.white24, size: 20),
                 onTap: () {
                   ref.read(musicPlayerProvider.notifier).playTrack(
@@ -626,7 +737,7 @@ class _QueueView extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Nerd Stats Bar 
+// Nerd Stats Bar
 // ═══════════════════════════════════════════════════════════════════
 
 class _NerdStats extends StatelessWidget {
@@ -640,9 +751,9 @@ class _NerdStats extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          color: AppColors.bgDark,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: AppColors.neumorphPressedDark(blur: 6, offset: 2),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -656,7 +767,7 @@ class _NerdStats extends StatelessWidget {
               _StatDot(),
               _StatChip(
                 label: 'Lossless',
-                color: AppColors.primary,
+                color: AppColors.accent,
               ),
             ],
           ],
@@ -751,21 +862,21 @@ class _TrackInfo extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: AppColors.accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.hd, size: 14, color: AppColors.primary),
+                      Icon(Icons.hd, size: 14, color: AppColors.accent),
                       const SizedBox(width: 3),
                       Text(
                         track.codec ?? 'FLAC',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                          color: AppColors.accent,
                         ),
                       ),
                     ],
@@ -780,7 +891,7 @@ class _TrackInfo extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Progress Slider — 
+// Progress Slider — Neumorphic track
 // ═══════════════════════════════════════════════════════════════════
 
 class _ProgressSlider extends ConsumerWidget {
@@ -793,12 +904,12 @@ class _ProgressSlider extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: SliderTheme(
         data: SliderThemeData(
-          trackHeight: 3,
-          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-          activeTrackColor: AppColors.primary,
-          inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-          thumbColor: AppColors.primary,
-          overlayColor: AppColors.primary.withValues(alpha: 0.15),
+          trackHeight: 4,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+          activeTrackColor: AppColors.accent,
+          inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+          thumbColor: AppColors.accent,
+          overlayColor: AppColors.accent.withValues(alpha: 0.15),
         ),
         child: Slider(
           value: state.position.inMilliseconds.toDouble(),
@@ -858,7 +969,7 @@ class _Timestamps extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Main Controls — Play/Pause, Next, Previous, Shuffle, Repeat
+// Main Controls — Neumorphic play/pause, next, prev, shuffle, repeat
 // ═══════════════════════════════════════════════════════════════════
 
 class _MainControls extends ConsumerWidget {
@@ -874,61 +985,40 @@ class _MainControls extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Shuffle
-          IconButton(
-            icon: Icon(
-              Icons.shuffle,
-              color: state.isShuffled ? AppColors.primary : Colors.white54,
-              size: 22,
-            ),
-            onPressed: notifier.toggleShuffle,
+          // Shuffle — neumorphic toggle
+          _ControlCircle(
+            icon: Icons.shuffle,
+            isActive: state.isShuffled,
+            size: 42,
+            onTap: notifier.toggleShuffle,
           ),
           // Previous
-          IconButton(
-            icon: const Icon(Icons.skip_previous, color: Colors.white, size: 36),
-            onPressed: notifier.previous,
+          _ControlCircle(
+            icon: Icons.skip_previous,
+            size: 50,
+            iconSize: 30,
+            onTap: notifier.previous,
           ),
-          // Play/Pause — large glass button
-          GestureDetector(
+          // Play/Pause — large neumorphic circle
+          _PlayPauseButton(
+            isPlaying: state.isPlaying,
             onTap: notifier.togglePlayPause,
-            child: Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Icon(
-                state.isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.black,
-                size: 34,
-              ),
-            ),
           ),
           // Next
-          IconButton(
-            icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
-            onPressed: notifier.next,
+          _ControlCircle(
+            icon: Icons.skip_next,
+            size: 50,
+            iconSize: 30,
+            onTap: notifier.next,
           ),
-          // Repeat
-          IconButton(
-            icon: Icon(
-              state.repeatMode == MusicRepeatMode.one
-                  ? Icons.repeat_one
-                  : Icons.repeat,
-              color: state.repeatMode != MusicRepeatMode.off
-                  ? AppColors.primary
-                  : Colors.white54,
-              size: 22,
-            ),
-            onPressed: notifier.cycleRepeatMode,
+          // Repeat — neumorphic toggle
+          _ControlCircle(
+            icon: state.repeatMode == MusicRepeatMode.one
+                ? Icons.repeat_one
+                : Icons.repeat,
+            isActive: state.repeatMode != MusicRepeatMode.off,
+            size: 42,
+            onTap: notifier.cycleRepeatMode,
           ),
         ],
       ),
@@ -936,8 +1026,164 @@ class _MainControls extends ConsumerWidget {
   }
 }
 
+/// Neumorphic control circle with press animation
+class _ControlCircle extends StatefulWidget {
+  final IconData icon;
+  final double size;
+  final double? iconSize;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _ControlCircle({
+    required this.icon,
+    this.size = 44,
+    this.iconSize,
+    this.isActive = false,
+    required this.onTap,
+  });
+
+  @override
+  State<_ControlCircle> createState() => _ControlCircleState();
+}
+
+class _ControlCircleState extends State<_ControlCircle> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        width: widget.size,
+        height: widget.size,
+        decoration: AppColors.appleGlassCircle(
+          isDark: true,
+          isSelected: widget.isActive,
+          isPressed: _pressed,
+        ),
+        child: Icon(
+          widget.icon,
+          color: widget.isActive ? AppColors.accentLight : Colors.white,
+          size: widget.iconSize ?? (widget.size * 0.48),
+        ),
+      ),
+    );
+  }
+}
+
+/// Large neumorphic play/pause button with scale animation
+class _PlayPauseButton extends StatefulWidget {
+  final bool isPlaying;
+  final VoidCallback onTap;
+
+  const _PlayPauseButton({
+    required this.isPlaying,
+    required this.onTap,
+  });
+
+  @override
+  State<_PlayPauseButton> createState() => _PlayPauseButtonState();
+}
+
+class _PlayPauseButtonState extends State<_PlayPauseButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnim;
+  bool _pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.90).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        _scaleController.forward();
+        setState(() => _pressed = true);
+      },
+      onTapUp: (_) {
+        _scaleController.reverse();
+        setState(() => _pressed = false);
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      onTapCancel: () {
+        _scaleController.reverse();
+        setState(() => _pressed = false);
+      },
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accent,
+                AppColors.accentDark,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: _pressed ? 0.15 : 0.35),
+                blurRadius: _pressed ? 10 : 20,
+                spreadRadius: _pressed ? 0 : 2,
+              ),
+              BoxShadow(
+                color: AppColors.neumorphShadowDark.withValues(alpha: 0.5),
+                blurRadius: 12,
+                offset: const Offset(4, 4),
+              ),
+            ],
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) => ScaleTransition(
+              scale: animation,
+              child: child,
+            ),
+            child: Icon(
+              widget.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              key: ValueKey(widget.isPlaying),
+              color: Colors.white,
+              size: 36,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
-// Bottom Actions Row — Volume, Speed, Sleep Timer, Like
+// Bottom Actions Row — Neumorphic icon buttons
 // ═══════════════════════════════════════════════════════════════════
 
 class _BottomActions extends ConsumerWidget {
@@ -952,7 +1198,7 @@ class _BottomActions extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           // Volume
-          _SmallActionButton(
+          _NeumorphSmallAction(
             icon: state.volume > 0.5
                 ? Icons.volume_up
                 : state.volume > 0
@@ -961,13 +1207,13 @@ class _BottomActions extends ConsumerWidget {
             onTap: () => _showVolumeSheet(context, ref, state),
           ),
           // Speed
-          _SmallActionButton(
+          _NeumorphSmallAction(
             icon: Icons.speed,
             label: state.playbackSpeed != 1.0 ? '${state.playbackSpeed}x' : null,
             onTap: () => _showSpeedSheet(context, ref, state),
           ),
           // Sleep timer
-          _SmallActionButton(
+          _NeumorphSmallAction(
             icon: Icons.bedtime_outlined,
             isActive: ref.watch(sleepTimerProvider) != null,
             label: ref.watch(sleepTimerProvider) != null
@@ -976,13 +1222,14 @@ class _BottomActions extends ConsumerWidget {
             onTap: () => showSleepTimerSheet(context, ref),
           ),
           // Favorite
-          _SmallActionButton(
+          _NeumorphSmallAction(
             icon: (state.currentTrack != null &&
                     ref.watch(likedSongsProvider).contains(state.currentTrack!.id))
                 ? Icons.favorite_rounded
                 : Icons.favorite_border_rounded,
             isActive: state.currentTrack != null &&
                 ref.watch(likedSongsProvider).contains(state.currentTrack!.id),
+            activeColor: Colors.redAccent,
             onTap: () {
               final track = state.currentTrack;
               if (track == null) return;
@@ -1002,7 +1249,7 @@ class _BottomActions extends ConsumerWidget {
             },
           ),
           // Nerd stats toggle
-          _SmallActionButton(
+          _NeumorphSmallAction(
             icon: Icons.info_outline,
             isActive: ref.watch(showNerdStatsProvider),
             onTap: () {
@@ -1022,8 +1269,8 @@ class _BottomActions extends ConsumerWidget {
       builder: (ctx) => Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceDark,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(color: AppColors.glassBorderDark),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: AppColors.neumorphRaisedDark(blur: 20, offset: 8),
         ),
         padding: const EdgeInsets.all(24),
         child: SafeArea(
@@ -1038,7 +1285,7 @@ class _BottomActions extends ConsumerWidget {
                   Expanded(
                     child: Slider(
                       value: state.volume,
-                      activeColor: AppColors.primary,
+                      activeColor: AppColors.accent,
                       inactiveColor: Colors.white12,
                       onChanged: (v) {
                         ref.read(musicPlayerProvider.notifier).setVolume(v);
@@ -1063,8 +1310,8 @@ class _BottomActions extends ConsumerWidget {
       builder: (ctx) => Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceDark,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(color: AppColors.glassBorderDark),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: AppColors.neumorphRaisedDark(blur: 20, offset: 8),
         ),
         padding: const EdgeInsets.all(24),
         child: SafeArea(
@@ -1084,23 +1331,26 @@ class _BottomActions extends ConsumerWidget {
                       ref.read(musicPlayerProvider.notifier).setPlaybackSpeed(s);
                       Navigator.pop(ctx);
                     },
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.primary.withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isActive
-                              ? AppColors.primary
-                              : Colors.white.withValues(alpha: 0.1),
-                        ),
+                        color: AppColors.bgDark,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: isActive
+                            ? [
+                                ...AppColors.neumorphPressedDark(blur: 4, offset: 2),
+                                BoxShadow(
+                                  color: AppColors.accent.withValues(alpha: 0.2),
+                                  blurRadius: 6,
+                                ),
+                              ]
+                            : AppColors.neumorphRaisedDark(blur: 6, offset: 2),
                       ),
                       child: Text(
                         '${s}x',
                         style: TextStyle(
-                          color: isActive ? AppColors.primary : Colors.white70,
+                          color: isActive ? AppColors.accent : Colors.white70,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1116,41 +1366,70 @@ class _BottomActions extends ConsumerWidget {
   }
 }
 
-class _SmallActionButton extends StatelessWidget {
+/// Neumorphic small action button with press feedback
+class _NeumorphSmallAction extends StatefulWidget {
   final IconData icon;
   final String? label;
   final VoidCallback onTap;
   final bool isActive;
+  final Color? activeColor;
 
-  const _SmallActionButton({
+  const _NeumorphSmallAction({
     required this.icon,
     this.label,
     required this.onTap,
     this.isActive = false,
+    this.activeColor,
   });
 
   @override
+  State<_NeumorphSmallAction> createState() => _NeumorphSmallActionState();
+}
+
+class _NeumorphSmallActionState extends State<_NeumorphSmallAction> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final activeCol = widget.activeColor ?? AppColors.accent;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 22,
-            color: isActive ? AppColors.primary : Colors.white54,
-          ),
-          if (label != null)
-            Text(
-              label!,
-              style: TextStyle(
-                fontSize: 9,
-                color: isActive ? AppColors.primary : Colors.white38,
-                fontWeight: FontWeight.w600,
-              ),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        width: 44,
+        height: 44,
+        decoration: AppColors.appleGlassCircle(
+          isDark: true,
+          isSelected: widget.isActive,
+          isPressed: _pressed,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              widget.icon,
+              size: 20,
+              color: widget.isActive ? activeCol : Colors.white70,
             ),
-        ],
+            if (widget.label != null)
+              Text(
+                widget.label!,
+                style: TextStyle(
+                  fontSize: 8,
+                  color: widget.isActive ? activeCol : Colors.white60,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

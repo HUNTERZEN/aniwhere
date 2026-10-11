@@ -180,32 +180,12 @@ class _GenreChipsRow extends ConsumerWidget {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-              decoration: BoxDecoration(
-                // Liquid glass pill when selected: subtle primary glow, NO solid white!
-                color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.28)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.06)),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : Colors.black.withValues(alpha: 0.10)),
-                  width: isSelected ? 1.2 : 0.8,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.35),
-                          blurRadius: 10,
-                          spreadRadius: 0.5,
-                        ),
-                      ]
-                    : null,
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: AppColors.appleGlassDecoration(
+                isDark: isDark,
+                radius: 20,
+                isSelected: isSelected,
               ),
               child: Center(
                 child: Text(
@@ -214,7 +194,7 @@ class _GenreChipsRow extends ConsumerWidget {
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
-                        ? Colors.white
+                        ? AppColors.accentLight
                         : (isDark ? Colors.white70 : Colors.black87),
                   ),
                 ),
@@ -289,14 +269,10 @@ class _AlbumsAndSinglesRow extends ConsumerWidget {
                         bottom: 8,
                         right: 8,
                         child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withValues(alpha: 0.7),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
+                          width: 36,
+                          height: 36,
+                          decoration: AppColors.appleGlassCircle(isDark: true),
+                          child: const Icon(Icons.play_arrow_rounded, size: 22, color: Colors.white),
                         ),
                       ),
                     ],
@@ -440,14 +416,6 @@ class _NowPlayingHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final track = state.currentTrack!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final useGlass = ref.watch(liquidGlassProvider);
-    final intensity = ref.watch(liquidGlassIntensityProvider);
-    final opacity = ref.watch(liquidGlassOpacityProvider);
-
-    final glassColor = isDark
-        ? const Color(0xFF101014).withValues(alpha: opacity.clamp(0.15, 0.70))
-        : Colors.white.withValues(alpha: (opacity * 1.3).clamp(0.20, 0.75));
-    final solidColor = isDark ? const Color(0xFF18181C) : Colors.white;
 
     return GestureDetector(
       onTap: () {
@@ -463,7 +431,7 @@ class _NowPlayingHero extends ConsumerWidget {
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -472,155 +440,136 @@ class _NowPlayingHero extends ConsumerWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: useGlass ? intensity : 0.01,
-              sigmaY: useGlass ? intensity : 0.01,
-            ),
+            filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
             child: Container(
-              decoration: BoxDecoration(
-                color: useGlass ? glassColor : solidColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 0.8,
-                ),
-                gradient: useGlass
-                    ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.25),
-                          Colors.white.withValues(alpha: isDark ? 0.03 : 0.10),
-                        ],
-                      )
-                    : null,
+              decoration: AppColors.appleGlassDecoration(
+                isDark: isDark,
+                radius: 22,
               ),
               padding: const EdgeInsets.all(14),
               child: Row(
+          children: [
+            // Album art
+            Hero(
+              tag: 'now_playing_hero_art',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: track.albumArtUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: track.albumArtUrl!,
+                        width: 58,
+                        height: 58,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => Container(
+                          width: 58,
+                          height: 58,
+                          color: AppColors.cardDark,
+                          child: const Icon(Icons.music_note, size: 28),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          width: 58,
+                          height: 58,
+                          color: AppColors.cardDark,
+                          child: const Icon(Icons.music_note, size: 28),
+                        ),
+                      )
+                    : Container(
+                        width: 58,
+                        height: 58,
+                        color: AppColors.cardDark,
+                        child: const Icon(Icons.music_note, size: 28),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Track info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Album art
-                  Hero(
-                    tag: 'now_playing_hero_art',
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: track.albumArtUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: track.albumArtUrl!,
-                              width: 58,
-                              height: 58,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(
-                                width: 58,
-                                height: 58,
-                                color: AppColors.cardDark,
-                                child: const Icon(Icons.music_note, size: 28),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                width: 58,
-                                height: 58,
-                                color: AppColors.cardDark,
-                                child: const Icon(Icons.music_note, size: 28),
-                              ),
-                            )
-                          : Container(
-                              width: 58,
-                              height: 58,
-                              color: AppColors.cardDark,
-                              child: const Icon(Icons.music_note, size: 28),
+                  Row(
+                    children: [
+                      Text(
+                        'NOW PLAYING',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.1,
+                              fontSize: 10,
                             ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  // Track info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'NOW PLAYING',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.1,
-                                    fontSize: 10,
-                                  ),
+                      ),
+                      if (track.isLossless) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'LOSSLESS',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accent,
                             ),
-                            if (track.isLossless) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'LOSSLESS',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          track.title,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          track.artist,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: isDark ? Colors.white60 : Colors.black54,
-                                fontSize: 12,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-
-                  // Hero Play/Pause button
-                  IconButton(
-                    icon: Icon(
-                      state.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
-                      color: AppColors.primary,
-                      size: 34,
-                    ),
-                    onPressed: () {
-                      ref.read(musicPlayerProvider.notifier).togglePlayPause();
-                    },
+                  const SizedBox(height: 3),
+                  Text(
+                    track.title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-
-                  // Hero 3-dots button (Workable)
-                  IconButton(
-                    icon: Icon(
-                      Icons.more_vert_rounded,
-                      color: isDark ? Colors.white60 : Colors.black54,
-                      size: 22,
-                    ),
-                    onPressed: () => showTrackOptionsSheet(context, ref, track),
+                  const SizedBox(height: 1),
+                  Text(
+                    track.artist,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDark ? Colors.white60 : Colors.black54,
+                          fontSize: 12,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-          ),
+
+            // Hero Play/Pause button
+            IconButton(
+              icon: Icon(
+                state.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                color: AppColors.accent,
+                size: 34,
+              ),
+              onPressed: () {
+                ref.read(musicPlayerProvider.notifier).togglePlayPause();
+              },
+            ),
+
+            // Hero 3-dots button (Workable)
+            IconButton(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: isDark ? Colors.white60 : Colors.black54,
+                size: 22,
+              ),
+              onPressed: () => showTrackOptionsSheet(context, ref, track),
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }
 

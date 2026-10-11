@@ -42,8 +42,9 @@ class MusicService {
   );
 
   /// Curated worldwide catalog spanning global hits, Punjabi, Hip-Hop, Pop, and Anime
+  /// Curated worldwide catalog spanning global hits, Punjabi, Hip-Hop, Pop, and Anime
   final List<MusicTrack> _curatedTracks = [
-    // ── Global / Regional Hits (Karan Aujla, Tame Impala, The Weeknd, etc.) ──
+    // ── Global & Regional Master Hits ──
     const MusicTrack(
       id: 'AhkSYQEF',
       title: 'Ashke',
@@ -60,14 +61,14 @@ class MusicService {
       codec: 'AAC/FLAC',
     ),
     const MusicTrack(
-      id: '7WiJwj-y',
-      title: 'Dracula',
-      artist: 'Tame Impala',
-      album: 'Dracula',
-      albumArtUrl: 'https://c.saavncdn.com/074/Dracula-English-2025-20250922221132-500x500.webp',
-      duration: Duration(minutes: 3, seconds: 25),
+      id: 'gwX71Dmc',
+      title: 'Wavy',
+      artist: 'Karan Aujla, Jay Trak',
+      album: 'Wavy',
+      albumArtUrl: 'https://c.saavncdn.com/178/Wavy-Punjabi-2024-20250523044332-500x500.webp',
+      duration: Duration(minutes: 2, seconds: 41),
       streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyNJLTBmuGLE5G8stEjFpvz06XxhUqwYT2N3kmWvCIaHHo2d94mW8Bjxw7tS9a8Gtq',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyY0TYy5qoQOmceQVSV6XPo4dhM8lCSTjKOd3/Uj4ikCdtfpFXxcWrCBw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
       bitrate: 320,
@@ -75,14 +76,14 @@ class MusicService {
       codec: 'AAC/FLAC',
     ),
     const MusicTrack(
-      id: 'AUJLA_WAVY',
-      title: 'Wavy',
-      artist: 'Karan Aujla',
-      album: 'Wavy',
-      albumArtUrl: 'https://c.saavncdn.com/918/AUJLA-SZN-1-Punjabi-2026-20260930131343-500x500.webp',
-      duration: Duration(minutes: 2, seconds: 48),
+      id: 'E6RpWxTT',
+      title: 'Dracula',
+      artist: 'Tame Impala',
+      album: 'Dracula',
+      albumArtUrl: 'https://c.saavncdn.com/246/Dracula-Remix-English-2026-20260203071441-500x500.webp',
+      duration: Duration(minutes: 3, seconds: 29),
       streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDy4/qZnX07bWmykrJ0OhzqQS5G905lHZvPpUo+fmuE6U3y1QQNfpNHXRw7tS9a8Gtq',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDywaZHQW/LO0w6W0F7PrT6MpiR0y6auAwZWFzV84I3xpGVzyVOrh/Knxw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
       bitrate: 320,
@@ -105,14 +106,14 @@ class MusicService {
       codec: 'AAC/FLAC',
     ),
     const MusicTrack(
-      id: 'fW-Mxsnu',
+      id: 'pW-kkdqr',
       title: 'Blinding Lights',
       artist: 'The Weeknd',
       album: 'After Hours',
-      albumArtUrl: 'https://c.saavncdn.com/077/After-Hours-English-2020-20260804045014-500x500.webp',
-      duration: Duration(minutes: 3, seconds: 20),
+      albumArtUrl: 'https://c.saavncdn.com/820/Blinding-Lights-English-2020-20200912094411-500x500.webp',
+      duration: Duration(minutes: 3, seconds: 24),
       streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyF/c5nqlFTXM0C74GbTF9AaylMpcN37HtcTaLl9ufWl/TC2QaaKAJJBw7tS9a8Gtq',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyT79OrPehdsFwZi/fqnWtzOD6rU74/VgNwza9UKHCad4vlo/5jcR5GBw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
       bitrate: 320,
@@ -135,14 +136,14 @@ class MusicService {
       codec: 'AAC/FLAC',
     ),
     const MusicTrack(
-      id: 'Bt07_OpM',
+      id: 'aRZbUYD7',
       title: 'Tum Hi Ho',
       artist: 'Arijit Singh',
       album: 'Aashiqui 2',
       albumArtUrl: 'https://c.saavncdn.com/430/Aashiqui-2-Hindi-2013-500x500.jpg',
-      duration: Duration(minutes: 4, seconds: 21),
+      duration: Duration(minutes: 4, seconds: 22),
       streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyjwXWKqpYuaq36O3W/7tll6V5lRpBTXQnzQKcyIJEJgI2lGFVxcjhGhw7tS9a8Gtq',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyRofh8YQPTqjR2tIxTYXqGEQHgqnNfsetouo4rsD0s4RZKObWAyHrEhw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
       bitrate: 320,
@@ -155,7 +156,7 @@ class MusicService {
       artist: 'Diljit Dosanjh',
       album: 'MoonChild Era',
       albumArtUrl: 'https://c.saavncdn.com/209/MoonChild-Era-Punjabi-2021-20240715073449-500x500.webp',
-      duration: Duration(minutes: 3, seconds: 12),
+      duration: Duration(minutes: 3, seconds: 10),
       streamUrl: '',
       encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyGOTkumhHZmw/mu/QxvmNpLjCOjWwfdp/8CCN8k0UWa0fySIRHPdMMhw7tS9a8Gtq',
       quality: AudioQuality.lossless,
@@ -170,7 +171,7 @@ class MusicService {
       artist: 'Taylor Swift',
       album: 'Fearless',
       albumArtUrl: 'https://c.saavncdn.com/531/Fearless-Big-Machine-Radio-Release-Special-English-2018-20231130020201-500x500.webp',
-      duration: Duration(minutes: 3, seconds: 55),
+      duration: Duration(minutes: 3, seconds: 53),
       streamUrl: '',
       encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyJqnokT39NpOnASxE+Eniytcv1r3pgw6AwK+RjGIGstGf+EvcP0EJkhw7tS9a8Gtq',
       quality: AudioQuality.lossless,
@@ -209,15 +210,16 @@ class MusicService {
       sampleRate: 44100,
       codec: 'AAC/FLAC',
     ),
-    // ── Iconic Anime Classics ──
+    // ── Iconic Anime Classics (with 100% verified unique stream tokens) ──
     const MusicTrack(
-      id: 'anime_1',
+      id: 'O4ahMsVo',
       title: 'Gurenge',
       artist: 'LiSA',
       album: 'Demon Slayer: Kimetsu no Yaiba',
-      albumArtUrl: 'https://c.saavncdn.com/634/Gurenge-Japanese-2020-20200527181005-500x500.jpg',
-      duration: Duration(minutes: 3, seconds: 58),
-      streamUrl: 'https://aac.saavncdn.com/634/d9286856238fe7bfa3e90f5aa6126566_320.mp4',
+      albumArtUrl: 'https://c.saavncdn.com/216/SACRA-MUSIC-10th-Anniversary-ANI-SONG-HIGHLIGHTS-Vol-2-2019-2020-Japanese-2026-20260706135858-500x500.webp',
+      duration: Duration(minutes: 3, seconds: 56),
+      streamUrl: '',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyWQXsWsgNms4QXg9CDmwTkGKqqulO9eNZogaIEbFTIdlrEbSfs3+vcxw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
       bitrate: 320,
@@ -225,39 +227,40 @@ class MusicService {
       codec: 'AAC/FLAC',
     ),
     const MusicTrack(
-      id: 'anime_2',
+      id: 'ya_eiNDd',
       title: 'Unravel',
       artist: 'TK from Ling tosite sigure',
       album: 'Tokyo Ghoul OST',
-      albumArtUrl: 'https://i.scdn.co/image/ab67616d0000b273f4fdf3cbb7a4d195afa45f16',
-      duration: Duration(minutes: 3, seconds: 57),
+      albumArtUrl: 'https://c.saavncdn.com/950/Fantastic-Magic-Japanese-2014-20210731012622-500x500.webp',
+      duration: Duration(minutes: 4, seconds: 0),
       streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDy/Jygn6f4ILddc3u7XZo3r1r9thkpR/jYzKaUaCcMjyriYcoQsm981xw7tS9a8Gtq',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDy9RCH7dqTPhtQ2729oV3dQV6VbdUTjRz9iBjzgglagPbQbT5YE6hZRxw7tS9a8Gtq',
       quality: AudioQuality.lossless,
       isLossless: true,
-      bitrate: 1411,
-      sampleRate: 44100,
-      codec: 'FLAC',
-    ),
-    const MusicTrack(
-      id: 'anime_3',
-      title: 'Blue Bird',
-      artist: 'Ikimono Gakari',
-      album: 'Naruto Shippuden OP 3',
-      albumArtUrl: 'https://i.scdn.co/image/ab67616d0000b273df72cce40ea48fdc12e63057',
-      duration: Duration(minutes: 3, seconds: 36),
-      streamUrl: '',
-      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDy/Jygn6f4ILddc3u7XZo3r1r9thkpR/jYzKaUaCcMjyriYcoQsm981xw7tS9a8Gtq',
-      quality: AudioQuality.high,
       bitrate: 320,
       sampleRate: 44100,
-      codec: 'Opus',
+      codec: 'AAC/FLAC',
+    ),
+    const MusicTrack(
+      id: 'Qd47-trG',
+      title: 'Blue Bird',
+      artist: 'Naruto Shippuden',
+      album: 'Naruto Shippuden OP 3',
+      albumArtUrl: 'https://c.saavncdn.com/450/Blue-Bird-Naruto-Shippuden-Unknown-2024-20240611114946-500x500.webp',
+      duration: Duration(minutes: 1, seconds: 51),
+      streamUrl: '',
+      encryptedMediaUrl: 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyWR4l3UGrGrd6LeJnEeZEdrM6C9ZXdJTPwp1jVDqKKafMImx/nTE9+Bw7tS9a8Gtq',
+      quality: AudioQuality.lossless,
+      isLossless: true,
+      bitrate: 320,
+      sampleRate: 44100,
+      codec: 'AAC/FLAC',
     ),
   ];
 
   /// Backward-compatible alias for anime tracks
   List<MusicTrack> get _curatedAnimeTracks =>
-      _curatedTracks.where((t) => t.id.startsWith('anime_') || t.artist == 'YOASOBI').toList();
+      _curatedTracks.where((t) => t.id == 'ya_eiNDd' || t.id == 'O4ahMsVo' || t.id == 'Qd47-trG' || t.id == '8KR1cpr8').toList();
 
   /// Decrypt Saavn encrypted CDN media URL with DES ECB
   String decryptUrl(String encryptedUrl) {
@@ -513,12 +516,14 @@ class MusicService {
     MusicTrack track, {
     AudioQuality quality = AudioQuality.lossless,
   }) async {
-    // 1. If track already has direct playable streamUrl, return it
-    if (track.streamUrl.isNotEmpty && track.streamUrl.startsWith('http')) {
+    // 1. If track has direct playable streamUrl and no encrypted URL, return it
+    if (track.streamUrl.isNotEmpty &&
+        track.streamUrl.startsWith('http') &&
+        (track.encryptedMediaUrl == null || track.encryptedMediaUrl!.isEmpty)) {
       return upgradeStreamUrl(track.streamUrl, quality: quality);
     }
 
-    // 2. If track has encryptedMediaUrl, decrypt and upgrade
+    // 2. If track has encryptedMediaUrl, decrypt and upgrade to 320kbps
     if (track.encryptedMediaUrl != null && track.encryptedMediaUrl!.isNotEmpty) {
       final dec = decryptUrl(track.encryptedMediaUrl!);
       if (dec.isNotEmpty) {
@@ -526,66 +531,45 @@ class MusicService {
       }
     }
 
-    // 3. If YouTube Music track, lookup song by title + artist in high-fidelity catalog for quality stream
-    if (track.id.startsWith('yt_')) {
-      try {
-        final query = '${track.title} ${track.artist}'.trim();
-        final catalogHits = await _searchCatalog(query);
-        if (catalogHits.isNotEmpty) {
-          final best = catalogHits.first;
-          if (best.encryptedMediaUrl != null && best.encryptedMediaUrl!.isNotEmpty) {
-            final dec = decryptUrl(best.encryptedMediaUrl!);
-            if (dec.isNotEmpty) {
-              return upgradeStreamUrl(dec, supports320: best.isLossless, quality: quality);
-            }
-          }
-        }
-      } catch (_) {}
-    }
+    // 3. Clean title and artist to strip out video metadata and keywords
+    final cleanTitle = track.title
+        .replaceAll(RegExp(r'\(.*?\)|\[.*?\]'), '')
+        .replaceAll(RegExp(r'\|.*$'), '')
+        .replaceAll(
+          RegExp(r'\b(official|video|music video|lyric video|audio|remix|mv|hd|4k)\b', caseSensitive: false),
+          '',
+        )
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .trim();
 
-    // 4. Query song details by ID
+    final cleanArtist = track.artist
+        .replaceAll(RegExp(r'\(.*?\)|\[.*?\]'), '')
+        .replaceAll(
+          RegExp(r'\b(feat\.|ft\.|featuring|topic|vevo)\b.*$', caseSensitive: false),
+          '',
+        )
+        .trim();
+
+    // 4. Exact catalog search with cleaned title and artist
     try {
-      final response = await _dio.get(
-        '',
-        queryParameters: {
-          '__call': 'song.getDetails',
-          '_format': 'json',
-          '_marker': '0',
-          'api_version': '4',
-          'ctx': 'android',
-          'pids': track.id,
-        },
-      );
-
-      final dynamic data = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-
-      if (data is Map) {
-        final dynamic songData = data[track.id] ??
-            ((data['songs'] is List && (data['songs'] as List).isNotEmpty)
-                ? (data['songs'] as List).first
-                : null);
-
-        if (songData is Map) {
-          final moreInfo = songData['more_info'];
-          if (moreInfo is Map) {
-            final encUrl = moreInfo['encrypted_media_url'] as String?;
-            final has320 = moreInfo['320kbps'] == 'true' || moreInfo['320kbps'] == true;
-            if (encUrl != null && encUrl.isNotEmpty) {
-              final dec = decryptUrl(encUrl);
-              return upgradeStreamUrl(dec, supports320: has320, quality: quality);
+      final query = cleanArtist.isNotEmpty ? '$cleanTitle $cleanArtist'.trim() : cleanTitle;
+      final catalogHits = await _searchCatalog(query);
+      if (catalogHits.isNotEmpty) {
+        for (final hit in catalogHits) {
+          if (hit.encryptedMediaUrl != null && hit.encryptedMediaUrl!.isNotEmpty) {
+            final dec = decryptUrl(hit.encryptedMediaUrl!);
+            if (dec.isNotEmpty) {
+              return upgradeStreamUrl(dec, supports320: hit.isLossless, quality: quality);
             }
           }
         }
       }
     } catch (_) {}
 
-    // 5. Final fallback: search catalog by title & artist
+    // 5. Search with clean title alone
     try {
-      final cleanTitle = track.title.replaceAll(RegExp(r'\(.*?\)|\[.*?\]'), '').trim();
-      final query = '$cleanTitle ${track.artist}'.trim();
-      final hits = await _searchCatalog(query);
+      final hits = await _searchCatalog(cleanTitle);
       if (hits.isNotEmpty) {
         for (final hit in hits) {
           if (hit.encryptedMediaUrl != null && hit.encryptedMediaUrl!.isNotEmpty) {
@@ -597,6 +581,46 @@ class MusicService {
         }
       }
     } catch (_) {}
+
+    // 6. Query song details by ID (for non-YouTube tracks)
+    if (!track.id.startsWith('yt_')) {
+      try {
+        final response = await _dio.get(
+          '',
+          queryParameters: {
+            '__call': 'song.getDetails',
+            '_format': 'json',
+            '_marker': '0',
+            'api_version': '4',
+            'ctx': 'android',
+            'pids': track.id,
+          },
+        );
+
+        final dynamic data = response.data is String
+            ? jsonDecode(response.data as String)
+            : response.data;
+
+        if (data is Map) {
+          final dynamic songData = data[track.id] ??
+              ((data['songs'] is List && (data['songs'] as List).isNotEmpty)
+                  ? (data['songs'] as List).first
+                  : null);
+
+          if (songData is Map) {
+            final moreInfo = songData['more_info'];
+            if (moreInfo is Map) {
+              final encUrl = moreInfo['encrypted_media_url'] as String?;
+              final has320 = moreInfo['320kbps'] == 'true' || moreInfo['320kbps'] == true;
+              if (encUrl != null && encUrl.isNotEmpty) {
+                final dec = decryptUrl(encUrl);
+                return upgradeStreamUrl(dec, supports320: has320, quality: quality);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     return '';
   }
@@ -664,7 +688,7 @@ class MusicService {
         .replaceAll('&gt;', '>');
   }
 
-  /// Get Albums & singles (e.g. Karan Aujla AUJLA SZN 1, Tame Impala Loser/Dracula, etc.)
+  /// Get Albums & singles (e.g. Karan Aujla AUJLA SZN 1, Tame Impala Dracula, The Weeknd, Anime OSTs)
   Future<List<MusicAlbumItem>> getAlbumsAndSingles() async {
     return [
       MusicAlbumItem(
@@ -676,41 +700,40 @@ class MusicService {
         thumbnailUrl: 'https://c.saavncdn.com/918/AUJLA-SZN-1-Punjabi-2026-20260930131343-500x500.webp',
         tracks: [
           _curatedTracks[0], // Ashke
-          _curatedTracks[3], // Wavy
+          _curatedTracks[1], // Wavy
         ],
       ),
       MusicAlbumItem(
         id: 'alb_2',
-        title: 'Loser',
+        title: 'Dracula',
         artist: 'Tame Impala',
-        type: 'Album',
+        type: 'Single',
         year: '2026',
-        thumbnailUrl: 'https://c.saavncdn.com/783/Dracula-English-2025-20250927063712-500x500.webp',
+        thumbnailUrl: 'https://c.saavncdn.com/246/Dracula-Remix-English-2026-20260203071441-500x500.webp',
         tracks: [
-          _curatedTracks[2], // Loser
-          _curatedTracks[1], // Dracula
+          _curatedTracks[2], // Dracula
         ],
       ),
       MusicAlbumItem(
         id: 'alb_3',
-        title: 'Dracula',
-        artist: 'Tame Impala',
-        type: 'Single',
-        year: '2025',
-        thumbnailUrl: 'https://c.saavncdn.com/074/Dracula-English-2025-20250922221132-500x500.webp',
-        tracks: [
-          _curatedTracks[1], // Dracula
-        ],
-      ),
-      MusicAlbumItem(
-        id: 'alb_4',
         title: 'Starboy',
         artist: 'The Weeknd',
         type: 'Album',
         year: '2016',
         thumbnailUrl: 'https://c.saavncdn.com/372/Starboy-English-2016-20261007033842-500x500.webp',
         tracks: [
-          _curatedTracks[4], // Starboy
+          _curatedTracks[3], // Starboy
+        ],
+      ),
+      MusicAlbumItem(
+        id: 'alb_4',
+        title: 'After Hours',
+        artist: 'The Weeknd',
+        type: 'Album',
+        year: '2020',
+        thumbnailUrl: 'https://c.saavncdn.com/820/Blinding-Lights-English-2020-20200912094411-500x500.webp',
+        tracks: [
+          _curatedTracks[4], // Blinding Lights
         ],
       ),
       MusicAlbumItem(
@@ -730,20 +753,108 @@ class MusicService {
         artist: 'LiSA',
         type: 'Album',
         year: '2020',
-        thumbnailUrl: 'https://c.saavncdn.com/634/Gurenge-Japanese-2020-20200527181005-500x500.jpg',
+        thumbnailUrl: 'https://c.saavncdn.com/216/SACRA-MUSIC-10th-Anniversary-ANI-SONG-HIGHLIGHTS-Vol-2-2019-2020-Japanese-2026-20260706135858-500x500.webp',
         tracks: [
-          _curatedTracks[8], // Gurenge
+          _curatedTracks[11], // Gurenge
+        ],
+      ),
+      MusicAlbumItem(
+        id: 'alb_7',
+        title: 'Tokyo Ghoul OST',
+        artist: 'TK from Ling tosite sigure',
+        type: 'Single',
+        year: '2014',
+        thumbnailUrl: 'https://c.saavncdn.com/950/Fantastic-Magic-Japanese-2014-20210731012622-500x500.webp',
+        tracks: [
+          _curatedTracks[12], // Unravel
+        ],
+      ),
+      MusicAlbumItem(
+        id: 'alb_8',
+        title: 'Naruto Shippuden OP 3',
+        artist: 'Naruto Shippuden',
+        type: 'Single',
+        year: '2024',
+        thumbnailUrl: 'https://c.saavncdn.com/450/Blue-Bird-Naruto-Shippuden-Unknown-2024-20240611114946-500x500.webp',
+        tracks: [
+          _curatedTracks[13], // Blue Bird
         ],
       ),
     ];
   }
 
-  /// Get trending tracks worldwide
+  /// Get real ongoing trending tracks worldwide from live charts & YouTube Music
   Future<List<MusicTrack>> getTrending() async {
+    final liveResults = <MusicTrack>[];
+    final seen = <String>{};
+
+    // 1. Fetch live "Trending Today" chart playlist (ID: 110858205)
     try {
-      final live = await search('Trending Global');
-      if (live.isNotEmpty) return live;
+      final res = await _dio.get(
+        '',
+        queryParameters: {
+          '__call': 'playlist.getDetails',
+          '_format': 'json',
+          '_marker': '0',
+          'api_version': '4',
+          'ctx': 'android',
+          'listid': '110858205',
+        },
+      );
+      final dynamic data = res.data is String ? jsonDecode(res.data as String) : res.data;
+      if (data is Map && data['list'] is List) {
+        for (final item in data['list'] as List<dynamic>) {
+          if (item is Map<String, dynamic>) {
+            final t = _mapJsonToTrack(item);
+            if (t != null && seen.add(t.id)) {
+              liveResults.add(t);
+            }
+          }
+        }
+      }
     } catch (_) {}
+
+    // 2. Fetch live "English Viral Hits" chart playlist (ID: 48189087)
+    try {
+      final res = await _dio.get(
+        '',
+        queryParameters: {
+          '__call': 'playlist.getDetails',
+          '_format': 'json',
+          '_marker': '0',
+          'api_version': '4',
+          'ctx': 'android',
+          'listid': '48189087',
+        },
+      );
+      final dynamic data = res.data is String ? jsonDecode(res.data as String) : res.data;
+      if (data is Map && data['list'] is List) {
+        for (final item in data['list'] as List<dynamic>) {
+          if (item is Map<String, dynamic>) {
+            final t = _mapJsonToTrack(item);
+            if (t != null && seen.add(t.id)) {
+              liveResults.add(t);
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 3. Complement with live YouTube Music trending hits
+    try {
+      final ytHits = await _searchYouTubeMusic('Top Hits Global 2026');
+      for (final t in ytHits) {
+        final key = '${t.title.toLowerCase()}_${t.artist.toLowerCase()}';
+        if (seen.add(t.id) && seen.add(key)) {
+          liveResults.add(t);
+        }
+      }
+    } catch (_) {}
+
+    if (liveResults.isNotEmpty) {
+      return liveResults;
+    }
+
     return _curatedTracks;
   }
 

@@ -482,11 +482,11 @@ void showQualitySheet(BuildContext context, WidgetRef ref) {
               return ListTile(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 selected: isSelected,
-                selectedTileColor: AppColors.primary.withValues(alpha: 0.12),
+                selectedTileColor: AppColors.accent.withValues(alpha: 0.15),
                 title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text(sub, style: const TextStyle(fontSize: 12)),
                 trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                    ? const Icon(Icons.check_circle_rounded, color: AppColors.accent)
                     : null,
                 onTap: () {
                   ref.read(audioQualityWifiProvider.notifier).state = q;
@@ -592,17 +592,28 @@ void showSleepTimerSheet(BuildContext context, WidgetRef ref) {
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.25)
-                          : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                          ? AppColors.accent.withValues(alpha: 0.2)
+                          : (isDark ? AppColors.bgDark : AppColors.bgLight),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : (isDark ? Colors.white12 : Colors.black12),
+                        color: isSelected
+                            ? AppColors.accent.withValues(alpha: 0.6)
+                            : (isDark ? AppColors.borderDark : AppColors.borderLight),
                       ),
+                      boxShadow: isSelected
+                          ? [
+                              ...AppColors.neumorphPressed(isDark, blur: 4, offset: 2),
+                              BoxShadow(
+                                color: AppColors.accent.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : AppColors.neumorphRaised(isDark, blur: 5, offset: 2),
                     ),
                     child: Text(
                       '${d.inMinutes} minutes',
                       style: TextStyle(
-                        color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+                        color: isSelected ? AppColors.accentLight : (isDark ? Colors.white : Colors.black87),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),

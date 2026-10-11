@@ -93,7 +93,7 @@ class _DynamicIslandCapsuleState extends ConsumerState<DynamicIslandCapsule>
                   offset: const Offset(0, 6),
                 ),
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: playerState.isPlaying ? 0.25 : 0.0),
+                  color: AppColors.accent.withValues(alpha: playerState.isPlaying ? 0.35 : 0.0),
                   blurRadius: 14,
                   spreadRadius: 1,
                 ),
@@ -315,7 +315,7 @@ class _EqualizerBars extends StatelessWidget {
       height: h.clamp(4.0, 16.0),
       margin: const EdgeInsets.symmetric(horizontal: 1.5),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: AppColors.accent,
         borderRadius: BorderRadius.circular(1.5),
       ),
     );

@@ -4,62 +4,58 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'app_colors.dart';
 
 /// Theme configuration for Aniwhere
-/// Follows Material 3 design guidelines with Material You dynamic colors
+/// Neumorphism design — soft extruded & inset shadows with tinted surfaces
 class AppTheme {
   AppTheme._();
 
-  // Default purple color scheme (fallback when dynamic colors unavailable)
-  static const _defaultSeedColor = AppColors.primary;
+  static const _defaultSeedColor = AppColors.accent;
 
-  // Dark Theme (Default) — Glassmorphism
+  // ═══════════════════════════════════════════════════════════════════
+  // Dark Theme — Neumorphism
+  // ═══════════════════════════════════════════════════════════════════
   static ThemeData darkTheme([ColorScheme? dynamicScheme]) {
     final baseScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFFFFFFFF),
+      seedColor: AppColors.accent,
       brightness: Brightness.dark,
     );
 
-    // Pure OLED Monochrome black & white scheme
     final colorScheme = baseScheme.copyWith(
-      primary: Colors.white,
-      onPrimary: Colors.black,
-      secondary: const Color(0xFFE4E4E7),
-      onSecondary: Colors.black,
+      primary: AppColors.accent,
+      onPrimary: Colors.white,
+      secondary: AppColors.accentLight,
+      onSecondary: Colors.white,
       surface: AppColors.bgDark,
       onSurface: Colors.white,
       onSurfaceVariant: const Color(0xFFA1A1AA),
       surfaceContainerHighest: AppColors.cardDark,
-      outline: const Color(0xFF262626),
+      outline: const Color(0xFF2A2A40),
     );
-
-    // Glass border color used consistently
-    const glassBorder = AppColors.glassBorderDark;
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgDark,
-      // Bottom Sheet Theme — glass
+      // Bottom Sheet Theme — neumorphic
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          side: BorderSide(color: glassBorder),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          side: BorderSide(color: AppColors.neumorphLightDark.withValues(alpha: 0.3)),
         ),
       ),
-      // Dialog Theme — glass
+      // Dialog Theme — neumorphic
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: glassBorder),
+          borderRadius: BorderRadius.circular(24),
         ),
       ),
-      // AppBar Theme — subtle glass bottom border
+      // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: AppColors.bgDark,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -71,44 +67,43 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      // Card Theme — glass bordered
+      // Card Theme — neumorphic raised
       cardTheme: CardThemeData(
         color: AppColors.cardDark,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: glassBorder),
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
-      // Input Decoration Theme — glass bordered
+      // Input Decoration Theme — neumorphic inset
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: glassBorder),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: glassBorder),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.accent, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: GoogleFonts.inter(color: colorScheme.onSurfaceVariant),
       ),
-      // Elevated Button Theme
+      // Elevated Button Theme — neumorphic raised
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 16,
@@ -116,13 +111,13 @@ class AppTheme {
           ),
         ),
       ),
-      // Outlined Button Theme — glass
+      // Outlined Button Theme — neumorphic
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-          side: BorderSide(color: glassBorder),
+          foregroundColor: AppColors.accent,
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.4)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           textStyle: GoogleFonts.inter(
@@ -134,7 +129,7 @@ class AppTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
+          foregroundColor: AppColors.accent,
           textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -154,10 +149,10 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      // Chip Theme — glass bordered
+      // Chip Theme — neumorphic
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceDark,
-        selectedColor: colorScheme.primary,
+        selectedColor: AppColors.accent,
         labelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w500,
@@ -166,9 +161,9 @@ class AppTheme {
         secondaryLabelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: colorScheme.onPrimary,
+          color: Colors.white,
         ),
-        side: const BorderSide(color: AppColors.glassBorderDark, width: 0.5),
+        side: BorderSide.none,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -176,8 +171,8 @@ class AppTheme {
       ),
       // Tab Bar Theme
       tabBarTheme: TabBarThemeData(
-        indicatorColor: colorScheme.primary,
-        labelColor: colorScheme.primary,
+        indicatorColor: AppColors.accent,
+        labelColor: AppColors.accent,
         unselectedLabelColor: colorScheme.onSurfaceVariant,
         dividerHeight: 0,
       ),
@@ -185,28 +180,40 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         tileColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
-      // Switch Theme
+      // Switch Theme — neumorphic toggle (NO white pill)
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.primary;
-          return Colors.grey[600];
+          if (states.contains(WidgetState.selected)) return AppColors.accent;
+          return const Color(0xFF4A4A5A);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.primary.withValues(alpha: 0.3);
-          return Colors.white.withValues(alpha: 0.1);
+          if (states.contains(WidgetState.selected)) return AppColors.accent.withValues(alpha: 0.35);
+          return const Color(0xFF252538);
         }),
         trackOutlineColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return Colors.transparent;
-          return glassBorder;
+          return const Color(0xFF3A3A4E);
         }),
+        trackOutlineWidth: WidgetStateProperty.all(1.0),
+      ),
+      // Slider Theme — neumorphic
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accent,
+        inactiveTrackColor: const Color(0xFF252538),
+        thumbColor: AppColors.accent,
+        overlayColor: AppColors.accent.withValues(alpha: 0.15),
+        trackHeight: 4,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
       ),
     );
   }
 
-  // Light Theme
+  // ═══════════════════════════════════════════════════════════════════
+  // Light Theme — Neumorphism
+  // ═══════════════════════════════════════════════════════════════════
   static ThemeData lightTheme([ColorScheme? dynamicScheme]) {
     final baseScheme = dynamicScheme?.harmonized() ??
         ColorScheme.fromSeed(
@@ -214,10 +221,10 @@ class AppTheme {
           brightness: Brightness.light,
         );
 
-    // Clean warm white surface
     final colorScheme = baseScheme.copyWith(
+      primary: AppColors.accent,
       surface: AppColors.bgLight,
-      surfaceContainerHighest: const Color(0xFFEFEFF4),
+      surfaceContainerHighest: AppColors.cardLight,
     );
 
     return ThemeData(
@@ -227,23 +234,23 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.bgLight,
       // Bottom Sheet Theme
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: AppColors.surfaceLight,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
       // Dialog Theme
       dialogTheme: DialogThemeData(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: AppColors.surfaceLight,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
       ),
       // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: AppColors.bgLight,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -255,37 +262,30 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      // Card Theme
+      // Card Theme — neumorphic raised
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: AppColors.cardLight,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.black.withValues(alpha: 0.05),
-          ),
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surfaceLight,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: Colors.black.withValues(alpha: 0.08),
-          ),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: Colors.black.withValues(alpha: 0.08),
-          ),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.accent, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: GoogleFonts.inter(color: colorScheme.onSurfaceVariant),
@@ -293,12 +293,12 @@ class AppTheme {
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 16,
@@ -309,12 +309,10 @@ class AppTheme {
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-          side: BorderSide(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-          ),
+          foregroundColor: AppColors.accent,
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.3)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           textStyle: GoogleFonts.inter(
@@ -326,7 +324,7 @@ class AppTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
+          foregroundColor: AppColors.accent,
           textStyle: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -346,10 +344,10 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      // Chip Theme — glass outlined style
+      // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: Colors.white,
-        selectedColor: colorScheme.primary,
+        backgroundColor: AppColors.surfaceLight,
+        selectedColor: AppColors.accent,
         labelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w500,
@@ -358,12 +356,9 @@ class AppTheme {
         secondaryLabelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: colorScheme.onPrimary,
+          color: Colors.white,
         ),
-        side: const BorderSide(
-          color: AppColors.glassBorderLight,
-          width: 0.5,
-        ),
+        side: BorderSide.none,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -371,8 +366,8 @@ class AppTheme {
       ),
       // Tab Bar Theme
       tabBarTheme: TabBarThemeData(
-        indicatorColor: colorScheme.primary,
-        labelColor: colorScheme.primary,
+        indicatorColor: AppColors.accent,
+        labelColor: AppColors.accent,
         unselectedLabelColor: colorScheme.onSurfaceVariant,
         dividerHeight: 0,
       ),
@@ -380,25 +375,37 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         tileColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
       // Switch Theme
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.primary;
+          if (states.contains(WidgetState.selected)) return AppColors.accent;
           return Colors.grey[400];
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.primary.withValues(alpha: 0.3);
-          return Colors.grey[300];
+          if (states.contains(WidgetState.selected)) return AppColors.accent.withValues(alpha: 0.35);
+          return AppColors.neumorphShadowLight.withValues(alpha: 0.5);
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+        trackOutlineWidth: WidgetStateProperty.all(1.0),
+      ),
+      // Slider Theme — neumorphic
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accent,
+        inactiveTrackColor: AppColors.neumorphShadowLight.withValues(alpha: 0.4),
+        thumbColor: AppColors.accent,
+        overlayColor: AppColors.accent.withValues(alpha: 0.15),
+        trackHeight: 4,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
       ),
     );
   }
 
-  // Build Text Theme
+  // ═══════════════════════════════════════════════════════════════════
+  // Text Theme
+  // ═══════════════════════════════════════════════════════════════════
   static TextTheme _buildTextTheme({required ColorScheme colorScheme}) {
     final Color primaryColor = colorScheme.onSurface;
     final Color secondaryColor = colorScheme.onSurfaceVariant;

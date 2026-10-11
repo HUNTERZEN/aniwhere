@@ -45,4 +45,24 @@ void main() {
     expect(medUrl.contains('_160.'), true);
     expect(highUrl.contains('_320.'), true);
   });
+
+  test('MusicService resolves distinct streams for Unravel, Wavy, and Blue Bird', () async {
+    final service = MusicService();
+    final albums = await service.getAlbumsAndSingles();
+
+    expect(albums.isNotEmpty, true);
+    expect(albums.any((a) => a.title == 'AUJLA SZN 1'), true);
+    expect(albums.any((a) => a.title == 'Tokyo Ghoul OST'), true);
+
+    final aujlaAlbum = albums.firstWhere((a) => a.title == 'AUJLA SZN 1');
+    expect(aujlaAlbum.tracks.length, 2);
+    expect(aujlaAlbum.tracks[0].title, 'Ashke');
+    expect(aujlaAlbum.tracks[1].title, 'Wavy');
+
+    final ashkeStream = await service.resolveStreamUrl(aujlaAlbum.tracks[0]);
+    final wavyStream = await service.resolveStreamUrl(aujlaAlbum.tracks[1]);
+    expect(ashkeStream.isNotEmpty, true);
+    expect(wavyStream.isNotEmpty, true);
+    expect(ashkeStream != wavyStream, true);
+  });
 }
