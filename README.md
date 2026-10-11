@@ -28,7 +28,7 @@
 
 **Aniwhere** is a free, open-source Flutter app for people who refuse to be tied down to one platform, one app, or one source.
 
-Watch anime. Read manga. Devour webtoons. Binge light novels.  
+Watch anime. Read manga. Devour webtoons. Binge light novels. Listen to music.  
 On your phone, your desktop, your old laptop — your anything.
 
 > Built from scratch by **[HUNTERZEN](https://github.com/HUNTERZEN)** — not a fork, not a clone. *A thing of its own.*
@@ -43,6 +43,7 @@ On your phone, your desktop, your old laptop — your anything.
 |:---:|:---|
 | 📖 | Manga · Webtoon · Comic · Light Novel reader |
 | 🎬 | Anime & movie streaming via extensions |
+| 🎵 | Music section — stream and listen to music |
 | 🔌 | JS-based extension system — add any source |
 | 📚 | Library with categories & read progress tracking |
 | 🔄 | Tracker sync — MyAnimeList · AniList · Kitsu |
@@ -105,7 +106,7 @@ aniwhere/
 │   ├── core/          # theme, router, constants
 │   ├── data/          # models, sources, repositories
 │   ├── features/      # library · browse · reader
-│   │                  # player · tracker · search · settings
+│   │                  # player · music · tracker · search · settings
 │   └── ui/            # shared widgets & screens
 ├── extensions/        # JS source extensions
 ├── assets/            # icons, fonts
@@ -144,6 +145,7 @@ extensions/
 | ✅ | Browse screen + MangaDex built-in source |
 | ✅ | Manga reader — paged & vertical scroll |
 | ✅ | Library with progress tracking |
+| ✅ | Music section — stream & listen to music |
 | ✅ | MAL / AniList / Kitsu tracker sync |
 | ✅ | Extension manager UI |
 | 🔲 | Backup & restore |
