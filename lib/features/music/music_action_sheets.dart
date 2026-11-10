@@ -18,6 +18,7 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (ctx) => ClipRRect(
@@ -30,13 +31,9 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF141418).withValues(alpha: opacity)
+                ? Colors.black.withValues(alpha: opacity.clamp(0.88, 0.98))
                 : Colors.white.withValues(alpha: opacity),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.15 + (opacity * 0.1)) : Colors.black.withValues(alpha: 0.08),
-              width: 0.8,
-            ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: SafeArea(
@@ -103,9 +100,8 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.2),
+                            color: AppColors.primary.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                           ),
                           child: const Text(
                             'LOSSLESS',
@@ -120,7 +116,7 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
                   ),
                 ),
 
-                const Divider(height: 24),
+                const SizedBox(height: 12),
 
                 // Action items
                 _ActionTile(
@@ -236,6 +232,7 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (ctx) => Consumer(
@@ -244,11 +241,8 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
 
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF16161B) : Colors.white,
+            color: isDark ? Colors.black : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isDark ? Colors.white12 : Colors.black12,
-            ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: SafeArea(
@@ -283,7 +277,7 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
                     ],
                   ),
                 ),
-                const Divider(),
+                const SizedBox(height: 8),
 
                 // Create new playlist button
                 ListTile(
@@ -304,7 +298,7 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
                   },
                 ),
 
-                const Divider(indent: 16, endIndent: 16),
+                const SizedBox(height: 4),
 
                 // Existing playlists
                 Flexible(
@@ -440,12 +434,12 @@ void showQualitySheet(BuildContext context, WidgetRef ref) {
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF16161B) : Colors.white,
+        color: isDark ? Colors.black : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
       ),
       padding: const EdgeInsets.all(24),
       child: SafeArea(
@@ -535,12 +529,12 @@ void showSleepTimerSheet(BuildContext context, WidgetRef ref) {
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF16161B) : Colors.white,
+        color: isDark ? Colors.black : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
       ),
       padding: const EdgeInsets.all(24),
       child: SafeArea(
@@ -608,11 +602,6 @@ void showSleepTimerSheet(BuildContext context, WidgetRef ref) {
                           ? AppColors.accent.withValues(alpha: 0.2)
                           : (isDark ? AppColors.bgDark : AppColors.bgLight),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.accent.withValues(alpha: 0.6)
-                            : (isDark ? AppColors.borderDark : AppColors.borderLight),
-                      ),
                       boxShadow: isSelected
                           ? [
                               ...AppColors.neumorphPressed(isDark, blur: 4, offset: 2),
@@ -648,6 +637,7 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Consumer(
@@ -662,9 +652,8 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141418) : Colors.white,
+            color: isDark ? Colors.black : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
           ),
           child: SafeArea(
             child: Column(
@@ -747,8 +736,14 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Play All'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: isDark ? const Color(0xFF16161E) : Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          ),
+                          icon: const Icon(Icons.play_arrow_rounded, color: Color(0xFFFA2D48)),
+                          label: const Text('Play', style: TextStyle(fontWeight: FontWeight.bold)),
                           onPressed: currentPl.tracks.isEmpty
                               ? null
                               : () {
@@ -763,9 +758,15 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.shuffle_rounded),
-                          label: const Text('Shuffle'),
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: isDark ? const Color(0xFF16161E) : Colors.black12,
+                            foregroundColor: isDark ? Colors.white : Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          ),
+                          icon: const Icon(Icons.shuffle_rounded, color: Color(0xFFFA2D48)),
+                          label: const Text('Shuffle', style: TextStyle(fontWeight: FontWeight.bold)),
                           onPressed: currentPl.tracks.isEmpty
                               ? null
                               : () {
@@ -783,7 +784,7 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
                   ),
                 ),
 
-                const Divider(),
+                const SizedBox(height: 8),
 
                 // Track list
                 Expanded(
@@ -959,6 +960,7 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (ctx) => Consumer(
@@ -966,6 +968,9 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
         final downloadedMap = ref.watch(downloadedTracksProvider);
         final isDownloaded = downloadedMap.containsKey(track.id);
         final currentQuality = downloadedMap[track.id] ?? ref.watch(downloadQualityProvider);
+        final progressMap = ref.watch(downloadProgressProvider);
+        final activeProgress = progressMap[track.id];
+        final isDownloading = activeProgress != null;
 
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -977,15 +982,9 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF141418).withValues(alpha: opacity)
+                    ? Colors.black.withValues(alpha: opacity.clamp(0.88, 0.98))
                     : Colors.white.withValues(alpha: opacity),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.15 + (opacity * 0.1))
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 0.8,
-                ),
               ),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: SafeArea(
@@ -1059,18 +1058,33 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                                  size: 16,
-                                  color: isDownloaded ? const Color(0xFFFA2D48) : AppColors.primary,
-                                ),
-                                const SizedBox(width: 4),
+                                if (isDownloading)
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      value: activeProgress > 0 ? activeProgress : null,
+                                      strokeWidth: 2,
+                                      color: const Color(0xFFFA2D48),
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                                    size: 16,
+                                    color: isDownloaded ? const Color(0xFFFA2D48) : AppColors.primary,
+                                  ),
+                                const SizedBox(width: 5),
                                 Text(
-                                  isDownloaded ? 'Downloaded' : 'Download',
+                                  isDownloading
+                                      ? '${(activeProgress * 100).toInt()}%'
+                                      : (isDownloaded ? 'Downloaded' : 'Download'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: isDownloaded ? const Color(0xFFFA2D48) : AppColors.primary,
+                                    color: (isDownloaded || isDownloading)
+                                        ? const Color(0xFFFA2D48)
+                                        : AppColors.primary,
                                   ),
                                 ),
                               ],
@@ -1080,7 +1094,37 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
                       ),
                     ),
 
-                    const Divider(height: 24),
+                    if (isDownloading) ...[
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: activeProgress > 0.02 ? activeProgress : null,
+                                minHeight: 6,
+                                backgroundColor: isDark ? Colors.white12 : Colors.black12,
+                                color: const Color(0xFFFA2D48),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Downloading real audio file (${(activeProgress * 100).toInt()}%)...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
 
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -1116,17 +1160,17 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
                       switch (q) {
                         case DownloadQuality.lossless:
                           qIcon = Icons.album_rounded;
-                          qBadge = 'FLAC · Bit-perfect';
+                          qBadge = 'Hi-Res / Max Bitrate';
                           qColor = const Color(0xFFFA2D48);
                           break;
                         case DownloadQuality.high:
                           qIcon = Icons.headphones_rounded;
-                          qBadge = '320 kbps · High Quality';
+                          qBadge = '160–320 kbps · High Quality';
                           qColor = const Color(0xFF6C5CE7);
                           break;
                         case DownloadQuality.low:
                           qIcon = Icons.data_saver_on_rounded;
-                          qBadge = '128 kbps · Low / Data Saver';
+                          qBadge = '96 kbps · Data Saver';
                           qColor = const Color(0xFF00B894);
                           break;
                       }
@@ -1135,28 +1179,52 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            ref.read(downloadQualityProvider.notifier).state = q;
-                            ref.read(downloadedTracksProvider.notifier).downloadTrack(track.id, q);
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.download_done_rounded, color: Colors.white, size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text('Downloaded "${track.title}" in ${q.label} quality (${q.perTrack})'),
-                                    ),
-                                  ],
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: const Color(0xFF1E1E26),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          },
+                          onTap: isDownloading
+                              ? null
+                              : () async {
+                                  HapticFeedback.mediumImpact();
+                                  ref.read(downloadQualityProvider.notifier).state = q;
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final result = await ref
+                                      .read(downloadedTracksProvider.notifier)
+                                      .downloadTrackReal(track, q);
+
+                                  if (ctx.mounted) {
+                                    Navigator.pop(ctx);
+                                  }
+
+                                  if (result != null) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.download_done_rounded,
+                                                color: Colors.white, size: 20),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'Downloaded "${track.title}" (${q.label}) · Saved to $result',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: const Color(0xFF1E1E26),
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  } else {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Could not download "${track.title}". Check connection and try again.',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(

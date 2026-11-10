@@ -74,19 +74,9 @@ class LiquidGlassContainer extends ConsumerWidget {
       }
     }
 
-    // Crisp frosted glass border with specular highlight
-    final Color resolvedBorderColor;
-    if (borderColor != null) {
-      resolvedBorderColor = borderColor!;
-    } else if (isSelected) {
-      resolvedBorderColor = const Color(0xFFFA2D48).withValues(alpha: 0.65);
-    } else if (isDark) {
-      resolvedBorderColor = Colors.white.withValues(alpha: isPressed ? 0.32 : (0.14 + (tintAlpha * 0.12)));
-    } else {
-      resolvedBorderColor = Colors.black.withValues(alpha: isPressed ? 0.20 : 0.09);
-    }
-
-    final resolvedBorderWidth = borderWidth ?? (isSelected ? 1.2 : 0.85);
+    // Borderless frosted glass (only uses custom borderColor if explicitly passed)
+    final Color resolvedBorderColor = borderColor ?? Colors.transparent;
+    final resolvedBorderWidth = borderWidth ?? 0.0;
 
     // Liquid shadow
     final resolvedShadows = customShadow ?? [
@@ -112,7 +102,9 @@ class LiquidGlassContainer extends ConsumerWidget {
       decoration: BoxDecoration(
         color: baseColor,
         borderRadius: borderRadius,
-        border: Border.all(color: resolvedBorderColor, width: resolvedBorderWidth),
+        border: resolvedBorderWidth > 0
+            ? Border.all(color: resolvedBorderColor, width: resolvedBorderWidth)
+            : null,
         boxShadow: resolvedShadows,
       ),
       child: child,

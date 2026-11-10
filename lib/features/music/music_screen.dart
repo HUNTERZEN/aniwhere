@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,9 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/music_models.dart';
 import '../../ui/widgets/glass_app_bar.dart';
+import '../auth/auth_service.dart';
+import '../auth/sign_in_screen.dart';
 import 'music_action_sheets.dart';
 import 'music_providers.dart';
-import 'now_playing_screen.dart';
 
 /// Music browse screen — the "Music" tab
 class MusicScreen extends ConsumerWidget {
@@ -55,12 +55,6 @@ class _MusicContent extends ConsumerWidget {
         // ── Genre / Category Pills (Frosted Glass & Interactive) ──
         const _GenreChipsRow(),
         const SizedBox(height: 16),
-
-        // ── Now Playing Hero (if playing) ──
-        if (playerState.hasTrack) ...[
-          _NowPlayingHero(state: playerState),
-          const SizedBox(height: 20),
-        ],
 
         // ── Categorized Content by Selected Chip ──
         if (selectedGenre == 'All') ...[
@@ -182,11 +176,27 @@ class _GenreChipsRow extends ConsumerWidget {
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: AppColors.appleGlassDecoration(
-                isDark: isDark,
-                radius: 20,
-                isSelected: isSelected,
-              ),
+              decoration: isDark
+                  ? AppColors.appleGlassDecoration(
+                      isDark: true,
+                      radius: 20,
+                      isSelected: isSelected,
+                    )
+                  : BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFFA2D48)
+                          : Colors.black.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFFA2D48).withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [],
+                    ),
               child: Center(
                 child: Text(
                   genre,
@@ -194,7 +204,7 @@ class _GenreChipsRow extends ConsumerWidget {
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
-                        ? AppColors.accentLight
+                        ? Colors.white
                         : (isDark ? Colors.white70 : Colors.black87),
                   ),
                 ),
@@ -309,6 +319,7 @@ class _AlbumsAndSinglesRow extends ConsumerWidget {
   void _openAlbumDetails(BuildContext context, WidgetRef ref, MusicAlbumItem album) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => DraggableScrollableSheet(
@@ -401,175 +412,6 @@ class _AlbumsAndSinglesRow extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Now Playing Hero
-// ═══════════════════════════════════════════════════════════════════
-
-class _NowPlayingHero extends ConsumerWidget {
-  final NowPlayingState state;
-  const _NowPlayingHero({required this.state});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final track = state.currentTrack!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const NowPlayingScreen(),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-            child: Container(
-              decoration: AppColors.appleGlassDecoration(
-                isDark: isDark,
-                radius: 22,
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Row(
-          children: [
-            // Album art
-            Hero(
-              tag: 'now_playing_hero_art',
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: track.albumArtUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: track.albumArtUrl!,
-                        width: 58,
-                        height: 58,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          width: 58,
-                          height: 58,
-                          color: AppColors.cardDark,
-                          child: const Icon(Icons.music_note, size: 28),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 58,
-                          height: 58,
-                          color: AppColors.cardDark,
-                          child: const Icon(Icons.music_note, size: 28),
-                        ),
-                      )
-                    : Container(
-                        width: 58,
-                        height: 58,
-                        color: AppColors.cardDark,
-                        child: const Icon(Icons.music_note, size: 28),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // Track info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'NOW PLAYING',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.accent,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.1,
-                              fontSize: 10,
-                            ),
-                      ),
-                      if (track.isLossless) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'LOSSLESS',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    track.title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    track.artist,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isDark ? Colors.white60 : Colors.black54,
-                          fontSize: 12,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            // Hero Play/Pause button
-            IconButton(
-              icon: Icon(
-                state.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
-                color: AppColors.accent,
-                size: 34,
-              ),
-              onPressed: () {
-                ref.read(musicPlayerProvider.notifier).togglePlayPause();
-              },
-            ),
-
-            // Hero 3-dots button (Workable)
-            IconButton(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: isDark ? Colors.white60 : Colors.black54,
-                size: 22,
-              ),
-              onPressed: () => showTrackOptionsSheet(context, ref, track),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-),
-);
   }
 }
 
@@ -859,11 +701,8 @@ class _PlaylistGrid extends ConsumerWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
+                    ? Colors.white.withValues(alpha: 0.06)
                     : Colors.white,
-                border: Border.all(
-                  color: isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight,
-                ),
               ),
               clipBehavior: Clip.antiAlias,
               child: Row(
@@ -961,6 +800,7 @@ class _UserPlaylistsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userPlaylists = ref.watch(userPlaylistsProvider);
     final likedIds = ref.watch(likedSongsProvider);
+    final ytmAuth = ref.watch(ytMusicAuthProvider);
 
     final favPlaylist = userPlaylists.firstWhere(
       (p) => p.id == 'fav_playlist',
@@ -979,17 +819,66 @@ class _UserPlaylistsSection extends ConsumerWidget {
         _SectionHeader(
           title: 'My Playlists',
           icon: Icons.library_music_rounded,
-          trailing: TextButton.icon(
-            onPressed: () => _showCreatePlaylistDialog(context, ref),
-            icon: const Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.primary),
-            label: const Text(
-              'New',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton.icon(
+                onPressed: () async {
+                  if (!ytmAuth.isSignedIn) {
+                    final ok = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(builder: (_) => const YtMusicSignInScreen()),
+                    );
+                    if (ok == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Signed in! Syncing YT Music playlists…')),
+                      );
+                    }
+                  } else if (!ytmAuth.isSyncing) {
+                    final n = await ref.read(ytMusicAuthProvider.notifier).syncPlaylists();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            n >= 0 ? 'Synced $n YouTube Music playlists' : 'Sync failed',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: ytmAuth.isSyncing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        ytmAuth.isSignedIn ? Icons.sync_rounded : Icons.login_rounded,
+                        size: 16,
+                        color: const Color(0xFFFA2D48),
+                      ),
+                label: Text(
+                  ytmAuth.isSignedIn ? 'Sync YT Music' : 'Google Sign-In',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFFA2D48),
+                  ),
+                ),
               ),
-            ),
+              TextButton.icon(
+                onPressed: () => _showCreatePlaylistDialog(context, ref),
+                icon: const Icon(Icons.add_circle_outline_rounded, size: 18, color: AppColors.primary),
+                label: const Text(
+                  'New',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -1109,10 +998,16 @@ class _PlaylistCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-          border: Border.all(
-            color: isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight,
-          ),
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1186,11 +1081,7 @@ class _CreatePlaylistCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.02),
-          border: Border.all(
-            color: isDark ? Colors.white24 : Colors.black12,
-            style: BorderStyle.solid,
-          ),
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1222,6 +1113,7 @@ class _CreatePlaylistCard extends StatelessWidget {
 void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist playlist) {
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Consumer(
@@ -1235,32 +1127,29 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return DraggableScrollableSheet(
-          initialChildSize: 0.7,
+          initialChildSize: 0.72,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (_, scrollController) => Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF141418) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(
-                color: isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight,
-              ),
+              color: isDark ? Colors.black : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: ListView(
               controller: scrollController,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
               children: [
                 Center(
                   child: Container(
                     width: 38,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.white24 : Colors.black26,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1276,8 +1165,8 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
                           : Container(
                               width: 80,
                               height: 80,
-                              color: AppColors.primary.withValues(alpha: 0.2),
-                              child: const Icon(Icons.music_note, color: AppColors.primary, size: 36),
+                              color: isDark ? const Color(0xFF14141A) : Colors.black12,
+                              child: Icon(Icons.music_note, color: isDark ? Colors.white70 : Colors.black87, size: 36),
                             ),
                     ),
                     const SizedBox(width: 16),
@@ -1299,9 +1188,9 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
                           const SizedBox(height: 6),
                           Text(
                             '${livePlaylist.tracks.length} tracks',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: isDark ? Colors.white70 : Colors.black87,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1311,15 +1200,16 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Action Buttons
+                // Action Buttons (AMOLED Dark Glass — no white block, no borders)
                 Row(
                   children: [
                     Expanded(
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: isDark ? const Color(0xFF16161E) : Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         onPressed: livePlaylist.tracks.isEmpty
                             ? null
@@ -1331,16 +1221,18 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
                                     );
                                 Navigator.pop(ctx);
                               },
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        label: const Text('Play All', style: TextStyle(fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.play_arrow_rounded, color: Color(0xFFFA2D48)),
+                        label: const Text('Play', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: isDark ? const Color(0xFF16161E) : Colors.black12,
+                          foregroundColor: isDark ? Colors.white : Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         onPressed: livePlaylist.tracks.isEmpty
                             ? null
@@ -1353,14 +1245,13 @@ void _showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist
                                     );
                                 Navigator.pop(ctx);
                               },
-                        icon: const Icon(Icons.shuffle_rounded),
-                        label: const Text('Shuffle'),
+                        icon: const Icon(Icons.shuffle_rounded, color: Color(0xFFFA2D48)),
+                        label: const Text('Shuffle', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Divider(),
+                const SizedBox(height: 16),
                 if (livePlaylist.tracks.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
@@ -1482,7 +1373,8 @@ void _showCreatePlaylistDialog(BuildContext context, WidgetRef ref, {MusicTrack?
         ),
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor: const Color(0xFFFA2D48),
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: () {
@@ -1508,115 +1400,6 @@ void _showCreatePlaylistDialog(BuildContext context, WidgetRef ref, {MusicTrack?
   );
 }
 
-void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack track) {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (ctx) => Consumer(
-      builder: (context, ref, _) {
-        final playlists = ref.watch(userPlaylistsProvider);
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[600],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.playlist_add_rounded, color: AppColors.primary, size: 24),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Add to Playlist',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.add_rounded, color: AppColors.primary),
-                  ),
-                  title: const Text('New Playlist', style: TextStyle(fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showCreatePlaylistDialog(context, ref, trackToAdd: track);
-                  },
-                ),
-                ...playlists.map((pl) {
-                  final containsTrack = pl.tracks.any((t) => t.id == track.id);
-                  return ListTile(
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: pl.thumbnailUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: pl.thumbnailUrl!,
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              width: 40,
-                              height: 40,
-                              color: isDark ? Colors.white10 : Colors.black12,
-                              child: const Icon(Icons.music_note, size: 20),
-                            ),
-                    ),
-                    title: Text(pl.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${pl.trackCount} tracks', style: const TextStyle(fontSize: 12)),
-                    trailing: containsTrack
-                        ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22)
-                        : null,
-                    onTap: () {
-                      if (containsTrack) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Already in ${pl.title}')),
-                        );
-                      } else {
-                        ref.read(userPlaylistsProvider.notifier).addTrackToPlaylist(pl.id, track);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Added "${track.title}" to ${pl.title}')),
-                        );
-                      }
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════════
 // Vertical Track List
 // ═══════════════════════════════════════════════════════════════════
@@ -1627,10 +1410,16 @@ class _VerticalTrackList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final downloadedMap = ref.watch(downloadedTracksProvider);
+    final progressMap = ref.watch(downloadProgressProvider);
+
     return Column(
       children: tracks.asMap().entries.map((entry) {
         final index = entry.key;
         final track = entry.value;
+        final isDownloaded = downloadedMap.containsKey(track.id);
+        final activeProgress = progressMap[track.id];
+        final isDownloading = activeProgress != null;
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1671,6 +1460,10 @@ class _VerticalTrackList extends ConsumerWidget {
           ),
           subtitle: Row(
             children: [
+              if (isDownloaded) ...[
+                const Icon(Icons.download_done_rounded, size: 14, color: Color(0xFFFA2D48)),
+                const SizedBox(width: 4),
+              ],
               if (track.id.startsWith('yt_') || track.codec == 'YouTube Music') ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -1678,7 +1471,6 @@ class _VerticalTrackList extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
                   ),
                   child: const Text(
                     'YT MUSIC',
@@ -1707,9 +1499,37 @@ class _VerticalTrackList extends ConsumerWidget {
               ),
             ],
           ),
-          trailing: IconButton(
-            icon: const Icon(Icons.more_vert, size: 20),
-            onPressed: () => _showTrackOptions(context, ref, track),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isDownloading)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      value: activeProgress > 0.02 ? activeProgress : null,
+                      strokeWidth: 2,
+                      color: const Color(0xFFFA2D48),
+                    ),
+                  ),
+                )
+              else
+                IconButton(
+                  icon: Icon(
+                    isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                    size: 20,
+                    color: isDownloaded ? const Color(0xFFFA2D48) : Colors.white54,
+                  ),
+                  tooltip: 'Download Song',
+                  onPressed: () => showDownloadMusicQualitySheet(context, ref, track),
+                ),
+              IconButton(
+                icon: const Icon(Icons.more_vert, size: 20),
+                onPressed: () => showTrackOptionsSheet(context, ref, track),
+              ),
+            ],
           ),
           onTap: () {
             ref.read(musicPlayerProvider.notifier).playTrack(
@@ -1728,89 +1548,6 @@ class _VerticalTrackList extends ConsumerWidget {
     final seconds = d.inSeconds % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
-
-  void _showTrackOptions(BuildContext context, WidgetRef ref, MusicTrack track) {
-    final isLiked = ref.read(likedSongsProvider).contains(track.id);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            ListTile(
-              leading: Icon(
-                isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isLiked ? Colors.redAccent : null,
-              ),
-              title: Text(isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'),
-              onTap: () {
-                ref.read(likedSongsProvider.notifier).toggleLike(track.id);
-                if (isLiked) {
-                  ref.read(userPlaylistsProvider.notifier).removeTrackFromPlaylist('fav_playlist', track.id);
-                } else {
-                  ref.read(userPlaylistsProvider.notifier).addTrackToPlaylist('fav_playlist', track);
-                }
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isLiked ? 'Removed "${track.title}" from Liked Songs' : 'Saved "${track.title}" to Liked Songs'),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.playlist_add_rounded),
-              title: const Text('Add to Playlist'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showAddToPlaylistSheet(context, ref, track);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.queue_music_rounded),
-              title: const Text('Add to Queue'),
-              onTap: () {
-                ref.read(musicPlayerProvider.notifier).addToQueue(track);
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${track.title} added to queue')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.download_rounded),
-              title: const Text('Download'),
-              subtitle: Text(track.isLossless ? 'FLAC · ~35 MB' : 'Opus · ~8 MB'),
-              onTap: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Downloading ${track.title}...')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_rounded),
-              title: const Text('Share'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1820,8 +1557,6 @@ class _VerticalTrackList extends ConsumerWidget {
 class _AudioQualityBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -1834,9 +1569,6 @@ class _AudioQualityBanner extends ConsumerWidget {
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-        ),
-        border: Border.all(
-          color: isDark ? AppColors.glassBorderDark : AppColors.glassBorderLight,
         ),
       ),
       child: Row(

@@ -1,7 +1,7 @@
 name: aniwhere
 description: "Watch and read anime, manga, anywhere."
 publish_to: 'none'
-version: 1.5.0+5
+version: 2.0.0+6
 
 environment:
   sdk: ^3.11.4
@@ -54,6 +54,7 @@ dependencies:
   dynamic_color: ^1.8.1
   webview_flutter: ^4.14.0
   dart_des: ^1.0.2
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

@@ -36,13 +36,12 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgDark,
-      // Bottom Sheet Theme — neumorphic
-      bottomSheetTheme: BottomSheetThemeData(
+      // Bottom Sheet Theme — seamless borderless dark surface
+      bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          side: BorderSide(color: AppColors.neumorphLightDark.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       // Dialog Theme — neumorphic
@@ -98,7 +97,7 @@ class AppTheme {
       // Elevated Button Theme — neumorphic raised
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: const Color(0xFF181820),
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -111,17 +110,34 @@ class AppTheme {
           ),
         ),
       ),
-      // Outlined Button Theme — neumorphic
+      // Filled Button Theme — sleek dark AMOLED glass button (never white-on-white)
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF181820),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      // Outlined Button Theme — borderless dark AMOLED glass button
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.accent,
-          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.4)),
+          backgroundColor: const Color(0xFF121218),
+          foregroundColor: Colors.white,
+          side: BorderSide.none,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           textStyle: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
         ),

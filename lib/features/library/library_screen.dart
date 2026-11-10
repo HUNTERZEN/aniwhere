@@ -1245,12 +1245,10 @@ class _LibrarySegmentedControl extends StatelessWidget {
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.07)
+            : Colors.black.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-          width: 0.5,
-        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1273,23 +1271,17 @@ class _LibrarySegmentedControl extends StatelessWidget {
                     child: Container(
                       margin: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+                        color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: isDark
                             ? []
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.06),
-                          width: 0.5,
-                        ),
                       ),
                     ),
                   ),
@@ -1298,10 +1290,10 @@ class _LibrarySegmentedControl extends StatelessWidget {
                     children: List.generate(labels.length, (index) {
                       final distance = (value - index).abs();
                       final double t = (1.0 - distance).clamp(0.0, 1.0);
-                      final selectedColor = isDark ? Colors.white : AppColors.primary;
+                      final selectedColor = isDark ? Colors.white : const Color(0xFF0A0A0E);
                       final unselectedColor = isDark
-                          ? Colors.white.withValues(alpha: 0.5)
-                          : Colors.black.withValues(alpha: 0.4);
+                          ? Colors.white.withValues(alpha: 0.55)
+                          : Colors.black.withValues(alpha: 0.50);
                       final textColor = Color.lerp(unselectedColor, selectedColor, t)!;
 
                       return Expanded(
@@ -1315,8 +1307,8 @@ class _LibrarySegmentedControl extends StatelessWidget {
                               labels[index],
                               style: TextStyle(
                                 color: textColor,
-                                fontWeight: t > 0.5 ? FontWeight.bold : FontWeight.w500,
-                                fontSize: 13,
+                                fontWeight: t > 0.5 ? FontWeight.w700 : FontWeight.w500,
+                                fontSize: 13.5,
                               ),
                             ),
                           ),
@@ -1461,11 +1453,8 @@ class _MusicLibraryTabView extends ConsumerWidget {
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF18181E) : Colors.white,
+              color: isDark ? const Color(0xFF0A0A0E) : Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
-              ),
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

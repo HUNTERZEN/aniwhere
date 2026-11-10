@@ -6,7 +6,7 @@ class AppConstants {
   // App Info
   static const String appName = 'Aniwhere';
   static const String appTagline = 'Watch and read anime, manga, anywhere.';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '2.0.0';
 
   // API Endpoints
   static const String mangaPillBaseUrl = 'https://mangapill.com';

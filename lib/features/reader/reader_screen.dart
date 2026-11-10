@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../core/services/native_bridge.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/providers.dart';
 import '../../data/models/app_settings.dart';
@@ -82,12 +83,15 @@ class _ReaderScreenInnerState extends ConsumerState<_ReaderScreenInner>
 
     // Load the first chapter
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final keepOn = ref.read(readerSettingsProvider).keepScreenOn;
+      NativeBridge.setKeepScreenOn(keepOn);
       _loadChapter();
     });
   }
 
   @override
   void dispose() {
+    NativeBridge.setKeepScreenOn(false);
     // Restore system UI on exit
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([
@@ -765,7 +769,8 @@ class _ReaderScreenInnerState extends ConsumerState<_ReaderScreenInner>
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: const Color(0xFF181820),
+                foregroundColor: Colors.white,
               ),
             ),
             const SizedBox(height: 12),

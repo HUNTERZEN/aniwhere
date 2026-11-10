@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import '../../data/models/app_settings.dart';
 import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/settings_repository.dart';
 import '../../data/sources/source.dart';
 
 // ============================================================================
@@ -111,18 +113,25 @@ class PlayerState {
 
 class PlayerStateNotifier extends StateNotifier<PlayerState> {
   final ChapterRepository _chapterRepo;
+  final SettingsRepository? _settingsRepo;
   final PlayerParams params;
+  AppSettings _settings = AppSettings();
   
   Player? _player;
   VideoController? _videoController;
   Timer? _hideControlsTimer;
   Timer? _progressSaveTimer;
-  List<StreamSubscription> _subscriptions = [];
+  final List<StreamSubscription> _subscriptions = [];
+
+  int get skipIntroSeconds => _settings.skipIntroSeconds;
+  int get skipOutroSeconds => _settings.skipOutroSeconds;
 
   PlayerStateNotifier({
     required this.params,
     required ChapterRepository chapterRepo,
+    SettingsRepository? settingsRepo,
   })  : _chapterRepo = chapterRepo,
+        _settingsRepo = settingsRepo,
         super(PlayerState(currentEpisodeIndex: params.initialEpisodeIndex)) {
     _initPlayer();
   }
@@ -154,12 +163,22 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> _initPlayer() async {
+    if (_settingsRepo != null) {
+      try {
+        _settings = await _settingsRepo.getSettings();
+      } catch (_) {}
+    }
     _player = Player(
       configuration: const PlayerConfiguration(
         title: 'Aniwhere Player',
       ),
     );
-    _videoController = VideoController(_player!);
+    _videoController = VideoController(
+      _player!,
+      configuration: VideoControllerConfiguration(
+        enableHardwareAcceleration: _settings.hardwareAcceleration,
+      ),
+    );
 
     // Listen to player state changes
     _subscriptions.addAll([
@@ -197,10 +216,12 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
         if (!mounted || !completed) return;
         // Mark as fully read/watched
         _markCurrentAsWatched();
-        
-        // Auto-play next episode if available?
-        // Let's just show controls for now
-        showControls();
+
+        if (_settings.autoPlayNext && canGoNextEpisode()) {
+          playNextEpisode();
+        } else {
+          showControls();
+        }
       }),
     ]);
 
@@ -272,6 +293,9 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
       );
       
       await _player?.open(media, play: true);
+      if (_settings.defaultPlaybackSpeed != 1.0) {
+        await _player?.setRate(_settings.defaultPlaybackSpeed);
+      }
       
       if (startPosition > Duration.zero) {
         await _player?.seek(startPosition);
@@ -343,8 +367,11 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
   }
   
   void skipIntro() {
-    // Arbitrary 85 seconds skip. We could implement Aniskip API in the future.
-    seekRelative(const Duration(seconds: 85));
+    seekRelative(Duration(seconds: _settings.skipIntroSeconds));
+  }
+
+  void skipOutro() {
+    seekRelative(Duration(seconds: _settings.skipOutroSeconds));
   }
   
   void changeQuality(SourceVideo stream) async {

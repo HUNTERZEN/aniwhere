@@ -32,8 +32,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     final glassEnabled = ref.watch(liquidGlassProvider);
     final intensity = ref.watch(liquidGlassIntensityProvider);
     final opacity = ref.watch(liquidGlassOpacityProvider);
-    final sigma = glassEnabled ? intensity : 0.001;
-    final alpha = glassEnabled ? opacity : 0.85;
+    final sigma = glassEnabled ? intensity.clamp(24.0, 36.0) : 24.0;
+    final alpha = glassEnabled ? opacity.clamp(0.24, 0.38) : 0.32;
 
     final contentColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white70 : Colors.black54;
@@ -41,28 +41,13 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.of(context).push(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 420),
-            reverseTransitionDuration: const Duration(milliseconds: 350),
-            pageBuilder: (_, __, ___) => const NowPlayingScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                )),
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
-              );
-            },
-          ),
-        );
+        showNowPlayingScreen(context);
+      },
+      onVerticalDragEnd: (details) {
+        if ((details.primaryVelocity ?? 0) < -180) {
+          HapticFeedback.lightImpact();
+          showNowPlayingScreen(context);
+        }
       },
       onHorizontalDragStart: (_) {
         setState(() {
@@ -99,34 +84,47 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
         duration: _isDragging ? Duration.zero : const Duration(milliseconds: 320),
         curve: Curves.easeOutBack,
         margin: const EdgeInsets.symmetric(horizontal: 16),
-        height: 62,
+        height: 58,
         transform: Matrix4.translationValues(_dragOffset * 0.5, 0, 0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(31),
+          borderRadius: BorderRadius.circular(29),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
               blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 1,
+              blurStyle: BlurStyle.outer,
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(31),
+          borderRadius: BorderRadius.circular(29),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF12121C).withValues(alpha: alpha)
-                    : Colors.white.withValues(alpha: alpha),
-                borderRadius: BorderRadius.circular(31),
+                    ? Colors.black.withValues(alpha: alpha)
+                    : Colors.white.withValues(alpha: alpha.clamp(0.68, 0.82)),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isDark
+                      ? [
+                          Colors.white.withValues(alpha: 0.10),
+                          Colors.white.withValues(alpha: 0.03),
+                          Colors.black.withValues(alpha: 0.18),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.72),
+                          Colors.white.withValues(alpha: 0.42),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(29),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.18 + (alpha * 0.12))
+                      ? Colors.white.withValues(alpha: 0.12)
                       : Colors.black.withValues(alpha: 0.08),
-                  width: 0.9,
+                  width: 0.8,
                 ),
               ),
               child: Stack(

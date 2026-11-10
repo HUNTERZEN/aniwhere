@@ -82,10 +82,6 @@ class _DynamicIslandCapsuleState extends ConsumerState<DynamicIslandCapsule>
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(_isExpanded ? 24 : 19),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 0.8,
-              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.5),
@@ -172,9 +168,7 @@ class _DynamicIslandCapsuleState extends ConsumerState<DynamicIslandCapsule>
         // Album art with tap to open full screen
         GestureDetector(
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NowPlayingScreen()),
-            );
+            showNowPlayingScreen(context);
           },
           child: Hero(
             tag: 'island_cover',

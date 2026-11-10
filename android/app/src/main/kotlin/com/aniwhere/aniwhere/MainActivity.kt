@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,15 +14,25 @@ import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.view.WindowManager
+import android.webkit.CookieManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.net.URL
 import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.aniwhere.music/notification"
+    private val NATIVE_CHANNEL = "com.aniwhere/native"
     private val NOTIFICATION_ID = 1001
     private val CHANNEL_ID = "aniwhere_music_channel"
     private var methodChannel: MethodChannel? = null
@@ -91,6 +102,107 @@ class MainActivity : FlutterActivity() {
                     notificationManager.cancel(NOTIFICATION_ID)
                     mediaSession?.isActive = false
                     result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // General-purpose native bridge (WebView cookies, network type, keep-screen-on)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NATIVE_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getCookies" -> {
+                    val url = call.argument<String>("url") ?: ""
+                    try {
+                        val cm = CookieManager.getInstance()
+                        cm.flush()
+                        result.success(cm.getCookie(url))
+                    } catch (e: Exception) {
+                        result.success(null)
+                    }
+                }
+                "clearCookies" -> {
+                    try {
+                        val cm = CookieManager.getInstance()
+                        cm.removeAllCookies { cm.flush() }
+                    } catch (_: Exception) {}
+                    result.success(true)
+                }
+                "isCellular" -> {
+                    var cellular = false
+                    try {
+                        val conn = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val caps = conn.getNetworkCapabilities(conn.activeNetwork)
+                            cellular = caps != null &&
+                                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
+                                !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            cellular = conn.activeNetworkInfo?.type == ConnectivityManager.TYPE_MOBILE
+                        }
+                    } catch (_: Exception) {}
+                    result.success(cellular)
+                }
+                "setKeepScreenOn" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    runOnUiThread {
+                        if (enabled) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                    }
+                    result.success(true)
+                }
+                "saveToDownloads" -> {
+                    val filePath = call.argument<String>("filePath") ?: ""
+                    val fileName = call.argument<String>("fileName") ?: "song.m4a"
+                    val mimeType = call.argument<String>("mimeType") ?: "audio/mp4"
+                    executor.execute {
+                        try {
+                            val srcFile = File(filePath)
+                            if (!srcFile.exists()) {
+                                runOnUiThread { result.success(null) }
+                                return@execute
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                val values = ContentValues().apply {
+                                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Aniwhere")
+                                    put(MediaStore.Downloads.IS_PENDING, 1)
+                                }
+                                val resolver = applicationContext.contentResolver
+                                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                                if (uri != null) {
+                                    resolver.openOutputStream(uri)?.use { outStream ->
+                                        FileInputStream(srcFile).use { inStream ->
+                                            inStream.copyTo(outStream)
+                                        }
+                                    }
+                                    values.clear()
+                                    values.put(MediaStore.Downloads.IS_PENDING, 0)
+                                    resolver.update(uri, values, null, null)
+                                    runOnUiThread { result.success("Download/Aniwhere/$fileName") }
+                                } else {
+                                    runOnUiThread { result.success(filePath) }
+                                }
+                            } else {
+                                @Suppress("DEPRECATION")
+                                val pubDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Aniwhere")
+                                if (!pubDir.exists()) pubDir.mkdirs()
+                                val dstFile = File(pubDir, fileName)
+                                FileInputStream(srcFile).use { inStream ->
+                                    FileOutputStream(dstFile).use { outStream ->
+                                        inStream.copyTo(outStream)
+                                    }
+                                }
+                                runOnUiThread { result.success(dstFile.absolutePath) }
+                            }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.success(filePath) }
+                        }
+                    }
                 }
                 else -> result.notImplemented()
             }

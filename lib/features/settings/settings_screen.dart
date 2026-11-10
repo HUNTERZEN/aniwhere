@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -11,6 +12,8 @@ import '../../core/utils/providers.dart';
 import '../../core/router/app_router.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/models/music_models.dart';
+import '../../features/auth/auth_service.dart';
+import '../../features/auth/sign_in_screen.dart';
 import '../../features/music/music_providers.dart';
 import '../../ui/widgets/glass_app_bar.dart';
 import '../../ui/widgets/liquid_glass.dart';
@@ -56,8 +59,102 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: settingsAsync.when(
         data: (settings) {
           final s = settings ?? AppSettings();
+          final ytmAuth = ref.watch(ytMusicAuthProvider);
           return ListView(
+            padding: const EdgeInsets.only(bottom: 120),
             children: [
+              // ═══════════════════════════════════════════════
+              // YouTube Music Account & Playlist Sync
+              // ═══════════════════════════════════════════════
+              _SettingsSection(
+                title: 'YouTube Music',
+                children: [
+                  if (!ytmAuth.isSignedIn)
+                    _SettingsTile(
+                      icon: Icons.login_rounded,
+                      title: 'Sign in with Google',
+                      subtitle: 'Connect YouTube Music & sync your playlists',
+                      onTap: () async {
+                        final ok = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(builder: (_) => const YtMusicSignInScreen()),
+                        );
+                        if (ok == true && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Signed in! Syncing YouTube Music playlists…'),
+                            ),
+                          );
+                        }
+                      },
+                    )
+                  else ...[
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                        backgroundImage: ytmAuth.account?.photoUrl != null
+                            ? CachedNetworkImageProvider(ytmAuth.account!.photoUrl!)
+                            : null,
+                        child: ytmAuth.account?.photoUrl == null
+                            ? const Icon(Icons.person_rounded, color: AppColors.primary)
+                            : null,
+                      ),
+                      title: Text(ytmAuth.account?.name ?? 'YouTube Music Account'),
+                      subtitle: Text(
+                        [
+                          if (ytmAuth.account?.handle != null) ytmAuth.account!.handle!,
+                          '${ytmAuth.syncedPlaylistCount} playlists synced',
+                        ].join(' · '),
+                      ),
+                      trailing: TextButton(
+                        onPressed: () async {
+                          await ref.read(ytMusicAuthProvider.notifier).signOut();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Signed out of YouTube Music')),
+                            );
+                          }
+                        },
+                        child: const Text('Sign Out'),
+                      ),
+                    ),
+                    _SettingsTile(
+                      icon: Icons.sync_rounded,
+                      title: ytmAuth.isSyncing
+                          ? 'Syncing YouTube Music Playlists…'
+                          : 'Sync YouTube Music Playlists',
+                      subtitle: ytmAuth.error ??
+                          (ytmAuth.lastSynced != null
+                              ? 'Last synced ${ytmAuth.syncedPlaylistCount} playlists'
+                              : 'Tap to import your library playlists'),
+                      trailing: ytmAuth.isSyncing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: () async {
+                        if (ytmAuth.isSyncing) return;
+                        final count =
+                            await ref.read(ytMusicAuthProvider.notifier).syncPlaylists();
+                        if (context.mounted) {
+                          final err = ref.read(ytMusicAuthProvider).error;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                count >= 0
+                                    ? 'Synced $count YouTube Music playlists'
+                                    : (err ?? 'Could not sync playlists'),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              ),
+
               // ═══════════════════════════════════════════════
               // Appearance Section
               // ═══════════════════════════════════════════════
@@ -138,11 +235,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                   ],
-                  _SettingsTile(
+                  _SwitchSettingsTile(
                     icon: Icons.notifications_active,
                     title: 'System Media & Device Capsule',
                     subtitle: 'Shows playback in notification drawer & punch-hole capsule',
-                    onTap: () {},
+                    value: ref.watch(dynamicIslandEnabledProvider),
+                    onChanged: (v) =>
+                        ref.read(dynamicIslandEnabledProvider.notifier).state = v,
                   ),
                   _SwitchSettingsTile(
                     icon: Icons.animation,
@@ -542,8 +641,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Clear Cache',
                     subtitle: 'Free up storage space',
                     onTap: () {
+                      PaintingBinding.instance.imageCache.clear();
+                      PaintingBinding.instance.imageCache.clearLiveImages();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cache cleared')),
+                        const SnackBar(content: Text('Image and media cache cleared')),
                       );
                     },
                   ),
@@ -1052,14 +1153,9 @@ class _SettingsSection extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
+                  ? const Color(0xFF0A0A0E)
                   : Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.08),
-              ),
               boxShadow: isDark
                   ? null
                   : [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -95,14 +96,34 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
 
     // Use initial media while loading full details
     final media = detailsAsync.valueOrNull ?? widget.initialMedia;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App bar with cover image
+          // App bar with cover image + status-bar scrim so phone notification icons are always legible
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
+            foregroundColor: Colors.white,
+            systemOverlayStyle: const SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+              statusBarBrightness: Brightness.dark,
+            ),
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -113,27 +134,47 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                       imageUrl: media!.coverUrl!,
                       fit: BoxFit.cover,
                       httpHeaders: _getImageHeaders(media.coverUrl!),
-                      errorWidget: (_, __, ___) => Container(
-                        color: AppColors.surfaceDark,
+                      errorWidget: (_, _, _) => Container(
+                        color: isDark ? AppColors.surfaceDark : Colors.grey.shade300,
                       ),
                     )
                   else
-                    Container(color: AppColors.surfaceDark),
-                  // Gradient overlay
-                  const DecoratedBox(
+                    Container(color: isDark ? AppColors.surfaceDark : Colors.grey.shade300),
+                  // Top status-bar scrim + bottom gradient overlay
+                  DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: AppColors.darkOverlay,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.65),
+                          Colors.transparent,
+                          isDark
+                              ? Colors.black.withValues(alpha: 0.88)
+                              : Colors.black.withValues(alpha: 0.55),
+                        ],
+                        stops: const [0.0, 0.35, 1.0],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: () {
-                  // Share functionality
-                },
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.share_rounded, color: Colors.white, size: 20),
+                    onPressed: () {
+                      // Share functionality
+                    },
+                  ),
+                ),
               ),
             ],
           ),
@@ -157,7 +198,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                   const SizedBox(height: 16),
 
                   // Action buttons
-                  _buildActionButtons(media),
+                  _buildActionButtons(media, isDark),
                   const SizedBox(height: 16),
 
                   // Description
@@ -174,8 +215,10 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                         maxLines: _isExpanded ? null : 4,
                         overflow: _isExpanded ? null : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondaryDark,
-                        ),
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
                       ),
                     ),
                     if (!_isExpanded && (media.description?.length ?? 0) > 200)
@@ -306,26 +349,65 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     );
   }
 
-  Widget _buildActionButtons(SourceMedia? media) {
+  Widget _buildActionButtons(SourceMedia? media, bool isDark) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
             onPressed: media != null ? () => _addToLibrary(media) : null,
-            icon: Icon(_isInLibrary ? Icons.check : Icons.add),
-            label: Text(_isInLibrary ? 'In Library' : 'Add to Library'),
+            icon: Icon(
+              _isInLibrary ? Icons.check_rounded : Icons.add_rounded,
+              color: Colors.white,
+            ),
+            label: Text(
+              _isInLibrary ? 'In Library' : 'Add to Library',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isInLibrary ? AppColors.success : AppColors.primary,
+              backgroundColor: _isInLibrary
+                  ? AppColors.success
+                  : (isDark ? const Color(0xFF7C5CFC) : const Color(0xFF14141E)),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 12),
         OutlinedButton.icon(
-          onPressed: media != null ? () {
-            _showTrackingSheet(media.title);
-          } : null,
-          icon: const Icon(Icons.bookmark_border),
-          label: const Text('Track'),
+          onPressed: media != null
+              ? () {
+                  _showTrackingSheet(media.title);
+                }
+              : null,
+          icon: Icon(
+            Icons.bookmark_border_rounded,
+            color: isDark ? Colors.white : const Color(0xFF14141E),
+          ),
+          label: Text(
+            'Track',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF14141E),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: isDark
+                ? const Color(0xFF161620)
+                : Colors.black.withValues(alpha: 0.06),
+            foregroundColor: isDark ? Colors.white : const Color(0xFF14141E),
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
         ),
       ],
     );

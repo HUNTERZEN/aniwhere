@@ -97,18 +97,21 @@ class _PlayerControlsState extends ConsumerState<PlayerControls> {
               ),
             ),
             
-            // Skip Intro Button
+            // Skip Intro / Outro Buttons
             if (widget.state.duration.inSeconds > 90)
               TextButton(
                 onPressed: widget.notifier.skipIntro,
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text('Skip Intro +85s', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  'Skip Intro +${widget.notifier.skipIntroSeconds}s',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
               
             const SizedBox(width: 8),

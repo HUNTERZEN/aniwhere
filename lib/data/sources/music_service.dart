@@ -622,7 +622,97 @@ class MusicService {
       } catch (_) {}
     }
 
+    // 7. Direct YouTube InnerTube audio stream fallback for yt_ tracks
+    if (track.id.startsWith('yt_')) {
+      final videoId = track.id.substring(3);
+      final ytUrl = await _resolveYouTubeStream(videoId, quality: quality);
+      if (ytUrl.isNotEmpty) return ytUrl;
+    }
+
     return '';
+  }
+
+  /// Download resolved audio stream to [savePath] with progress callback
+  Future<bool> downloadTrackFile({
+    required MusicTrack track,
+    required AudioQuality quality,
+    required String savePath,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    final streamUrl = await resolveStreamUrl(track, quality: quality);
+    if (streamUrl.isEmpty) return false;
+    try {
+      final dlDio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(minutes: 3),
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+          },
+        ),
+      );
+      await dlDio.download(
+        streamUrl,
+        savePath,
+        onReceiveProgress: onProgress,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Resolve a direct audio stream URL from YouTube's InnerTube player API
+  Future<String> _resolveYouTubeStream(
+    String videoId, {
+    AudioQuality quality = AudioQuality.lossless,
+  }) async {
+    try {
+      final res = await _ytDio.post(
+        'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+        data: {
+          'videoId': videoId,
+          'context': {
+            'client': {
+              'clientName': 'ANDROID_VR',
+              'clientVersion': '1.60.19',
+              'androidSdkVersion': 34,
+              'hl': 'en',
+              'gl': 'US',
+            },
+          },
+        },
+      );
+      final dynamic data = res.data is String ? jsonDecode(res.data as String) : res.data;
+      if (data is! Map) return '';
+      final adaptive = data['streamingData']?['adaptiveFormats'];
+      if (adaptive is! List) return '';
+
+      final candidates = <MapEntry<int, String>>[];
+      for (final f in adaptive) {
+        if (f is! Map) continue;
+        final mime = f['mimeType']?.toString() ?? '';
+        final url = f['url']?.toString() ?? '';
+        if (!mime.startsWith('audio/') || url.isEmpty) continue;
+        final br = (f['bitrate'] as num?)?.toInt() ?? 0;
+        candidates.add(MapEntry(br, url));
+      }
+      if (candidates.isEmpty) return '';
+      candidates.sort((a, b) => a.key.compareTo(b.key));
+
+      switch (quality) {
+        case AudioQuality.low:
+          return candidates.first.value;
+        case AudioQuality.medium:
+          return candidates[candidates.length ~/ 2].value;
+        case AudioQuality.high:
+        case AudioQuality.lossless:
+          return candidates.last.value;
+      }
+    } catch (_) {
+      return '';
+    }
   }
 
   MusicTrack? _mapJsonToTrack(Map<String, dynamic> json) {

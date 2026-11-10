@@ -279,12 +279,10 @@ class _BrowseContentTabState extends ConsumerState<_BrowseContentTab>
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-                  width: 0.5,
-                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -428,7 +426,6 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -437,21 +434,15 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white)
+              ? (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05))
-                : Colors.transparent,
-            width: 0.5,
-          ),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ]
               : null,
@@ -460,9 +451,9 @@ class _FilterChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: isSelected
-                ? (isDark ? Colors.white : primary)
-                : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4)),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ? (isDark ? Colors.white : const Color(0xFF0A0A0E))
+                : (isDark ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.52)),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 14,
           ),
         ),
@@ -506,39 +497,33 @@ class _MediaCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: isDark ? AppColors.cardDark : Colors.white,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.glassBorderDark
-                          : AppColors.glassBorderLight,
-                      width: 0.5,
-                    ),
                     boxShadow: isDark
                         ? []
                         : [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
                           ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: media.coverUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: media.coverUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      httpHeaders: _getImageHeaders(media.coverUrl!),
-                      placeholder: (_, __) => Container(
-                        color: AppColors.surfaceDark,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
+                      ? CachedNetworkImage(
+                          imageUrl: media.coverUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          httpHeaders: _getImageHeaders(media.coverUrl!),
+                          placeholder: (_, _) => Container(
+                            color: isDark ? AppColors.surfaceDark : Colors.black.withValues(alpha: 0.04),
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (_, _, _) => _buildPlaceholder(isDark),
+                        )
+                      : _buildPlaceholder(isDark),
                 );
               },
             ),
@@ -548,7 +533,9 @@ class _MediaCard extends StatelessWidget {
             media.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
           ),
         ],
       ),
@@ -563,11 +550,15 @@ class _MediaCard extends StatelessWidget {
     return {};
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(bool isDark) {
     return Container(
-      color: AppColors.surfaceDark,
-      child: const Center(
-        child: Icon(Icons.image, size: 32, color: AppColors.textTertiaryDark),
+      color: isDark ? AppColors.surfaceDark : Colors.black.withValues(alpha: 0.05),
+      child: Center(
+        child: Icon(
+          Icons.image,
+          size: 32,
+          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+        ),
       ),
     );
   }
@@ -591,12 +582,10 @@ class _BrowseSegmentedControl extends StatelessWidget {
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 4),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.07)
+            : Colors.black.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
-          width: 0.5,
-        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -619,31 +608,25 @@ class _BrowseSegmentedControl extends StatelessWidget {
                     child: Container(
                       margin: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+                        color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: isDark
                             ? []
                             : [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.06),
-                          width: 0.5,
-                        ),
                       ),
                     ),
                   ),
                   // Tab labels row (Manga and Anime inline)
                   Row(
                     children: [
-                      _buildTab(context, 0, Icons.menu_book, 'Manga', value),
-                      _buildTab(context, 1, Icons.play_circle, 'Anime', value),
+                      _buildTab(context, 0, Icons.menu_book_rounded, 'Manga', value),
+                      _buildTab(context, 1, Icons.play_circle_fill_rounded, 'Anime', value),
                     ],
                   ),
                 ],
@@ -657,20 +640,21 @@ class _BrowseSegmentedControl extends StatelessWidget {
 
   Widget _buildTab(BuildContext context, int index, IconData icon, String label, double value) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final distance = (value - index).abs();
     final double t = (1.0 - distance).clamp(0.0, 1.0);
-    final selectedColor = isDark ? Colors.white : AppColors.primary;
+    // In Light/White mode, the sliding pill is white, so the selected label/icon is crisp dark!
+    final selectedColor = isDark ? Colors.white : const Color(0xFF0A0A0E);
     final unselectedColor = isDark
-        ? Colors.white.withValues(alpha: 0.5)
-        : Colors.black.withValues(alpha: 0.4);
+        ? Colors.white.withValues(alpha: 0.55)
+        : Colors.black.withValues(alpha: 0.50);
     final activeColor = Color.lerp(unselectedColor, selectedColor, t)!;
 
     return Expanded(
       child: GestureDetector(
         onTap: () => onTap(index),
         behavior: HitTestBehavior.opaque,
-        child: Container(
+        child: SizedBox(
           height: 38,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -685,8 +669,8 @@ class _BrowseSegmentedControl extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: activeColor,
-                  fontWeight: t > 0.5 ? FontWeight.bold : FontWeight.w500,
-                  fontSize: 13,
+                  fontWeight: t > 0.5 ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 13.5,
                 ),
               ),
             ],

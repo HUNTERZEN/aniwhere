@@ -1,19 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/router/app_router.dart';
-import '../../data/models/music_models.dart';
 import '../../features/music/mini_player.dart';
 import '../../features/music/music_providers.dart';
-import '../../features/music/now_playing_screen.dart';
 
-/// Main screen with Apple Music Liquid Glass navigation bar,
-/// interactive drag magnifying bubble, and iOS Dynamic Docking Capsule on scroll down.
+/// Main screen with iOS 27 Fluid Optical Liquid Glass navigation bar
+/// and unclipped magnifying droplet lens on left/right pull.
 class HomeScreen extends ConsumerWidget {
   final Widget child;
 
@@ -31,77 +28,55 @@ class HomeScreen extends ConsumerWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final playerState = ref.watch(musicPlayerProvider);
     final isBarVisible = ref.watch(isBottomBarVisibleProvider);
-    final isDocked = ref.watch(isDockedCapsuleProvider);
 
     final navBottomMargin = bottomPadding > 0 ? bottomPadding : 16.0;
-    final miniPlayerBottom = navBottomMargin + _navBarHeight + 10.0;
+    final miniPlayerBottom = navBottomMargin + _navBarHeight + 12.0;
 
     return Scaffold(
       extendBody: true,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is UserScrollNotification) {
-            if (notification.direction == ScrollDirection.reverse) {
-              // User scrolled down -> morph to compact dock capsule (Screenshot 3)
-              if (!ref.read(isDockedCapsuleProvider)) {
-                ref.read(isDockedCapsuleProvider.notifier).state = true;
-              }
-            } else if (notification.direction == ScrollDirection.forward) {
-              // User scrolled up -> expand to full bar + mini player (Screenshot 1)
-              if (ref.read(isDockedCapsuleProvider)) {
-                ref.read(isDockedCapsuleProvider.notifier).state = false;
-              }
-            }
-          } else if (notification is ScrollUpdateNotification) {
-            // Near top -> always restore expanded mode
-            if (notification.metrics.pixels <= 15 && ref.read(isDockedCapsuleProvider)) {
-              ref.read(isDockedCapsuleProvider.notifier).state = false;
-            }
-          }
-          return false;
-        },
-        child: Stack(
-          children: [
-            child,
+      body: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          child,
 
-            // Floating Mini Player (Visible in expanded mode, slides into dock in collapsed mode)
-            if (playerState.hasTrack)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: miniPlayerBottom,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 380),
-                  curve: Curves.easeOutCubic,
-                  offset: (!isDocked && isBarVisible) ? Offset.zero : const Offset(0, 1.8),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 280),
-                    opacity: (!isDocked && isBarVisible) ? 1.0 : 0.0,
-                    child: IgnorePointer(
-                      ignoring: isDocked || !isBarVisible,
-                      child: const MiniPlayer(),
-                    ),
-                  ),
+          // Floating Mini Player stays cleanly above the 5-tab Liquid Glass bar (never overlaps on scroll)
+          if (playerState.hasTrack)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: miniPlayerBottom,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                offset: isBarVisible ? Offset.zero : const Offset(0, 1.8),
+                child: IgnorePointer(
+                  ignoring: !isBarVisible,
+                  child: const MiniPlayer(),
                 ),
               ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: AnimatedSlide(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        offset: isBarVisible ? Offset.zero : const Offset(0, 1.5),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 300),
-          opacity: isBarVisible ? 1.0 : 0.0,
-          child: _NeumorphicNavBar(
-            selectedIndex: selectedIndex,
-            isDark: isDark,
-            isPlaying: playerState.isPlaying,
-            isDocked: isDocked && playerState.hasTrack,
-            onTabSelected: (index) => _onItemTapped(context, ref, index),
+            ),
+
+          // Bottom Liquid Glass Navigation Bar placed directly in Stack (no Opacity layer)
+          // so BackdropFilter and RawMagnifier sample the live background directly.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 380),
+              curve: Curves.easeOutCubic,
+              offset: isBarVisible ? Offset.zero : const Offset(0, 1.6),
+              child: IgnorePointer(
+                ignoring: !isBarVisible,
+                child: _LiquidGlassNavBar(
+                  selectedIndex: selectedIndex,
+                  isDark: isDark,
+                  onTabSelected: (index) => _onItemTapped(context, ref, index),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -144,93 +119,216 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Neumorphic Floating Navigation Bar with spring-physics traveling indicator,
-/// liquid magnifying drag lens, and dynamic scroll docking capsule.
-class _NeumorphicNavBar extends ConsumerStatefulWidget {
+/// iOS 27 Floating Liquid Glass Navigation Bar:
+/// - Pure translucent Liquid Glass pill (no rainbow effect, no white borders)
+/// - Slides 1:1 with finger when dragging left & right, swelling into a
+///   liquid glass lens that magnifies tab icons as it glides across them.
+class _LiquidGlassNavBar extends ConsumerStatefulWidget {
   final int selectedIndex;
   final bool isDark;
-  final bool isPlaying;
-  final bool isDocked;
   final ValueChanged<int> onTabSelected;
 
-  const _NeumorphicNavBar({
+  const _LiquidGlassNavBar({
     required this.selectedIndex,
     required this.isDark,
-    required this.isPlaying,
-    required this.isDocked,
     required this.onTabSelected,
   });
 
   @override
-  ConsumerState<_NeumorphicNavBar> createState() => _NeumorphicNavBarState();
+  ConsumerState<_LiquidGlassNavBar> createState() => _LiquidGlassNavBarState();
 }
 
-class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
+class _LiquidGlassNavBarState extends ConsumerState<_LiquidGlassNavBar>
+    with TickerProviderStateMixin {
   static const int _tabCount = 5;
+  static const double _barHeight = 66.0;
 
-  bool _isDragging = false;
-  double _dragX = 0.0;
+  late final AnimationController _positionController;
+  late final AnimationController _lensController;
+
+  bool _isInteracting = false;
+  bool _hasDragged = false;
+  double _downX = 0.0;
+  double _velocityX = 0.0;
   int _hoverIndex = 0;
+  int? _activePointer;
+  DateTime? _pointerDownTime;
 
   @override
   void initState() {
     super.initState();
     _hoverIndex = widget.selectedIndex.clamp(0, _tabCount - 1);
+
+    // Continuous normalized tab coordinate (0.0 .. 4.0) with unbounded bouncy spring support
+    _positionController = AnimationController.unbounded(
+      vsync: this,
+      value: _hoverIndex.toDouble(),
+    )..addListener(() => setState(() {}));
+
+    // Unbounded bouncy spring controller for droplet swell (0.0 = resting frosted pillow, 1.0 = clear magnifying droplet)
+    _lensController = AnimationController.unbounded(
+      vsync: this,
+      value: 0.0,
+    )..addListener(() => setState(() {}));
   }
 
   @override
-  void didUpdateWidget(covariant _NeumorphicNavBar oldWidget) {
+  void didUpdateWidget(covariant _LiquidGlassNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_isDragging && oldWidget.selectedIndex != widget.selectedIndex) {
-      if (widget.selectedIndex < _tabCount) {
-        _hoverIndex = widget.selectedIndex;
-      }
+    if (!_isInteracting && oldWidget.selectedIndex != widget.selectedIndex) {
+      final target = widget.selectedIndex.clamp(0, _tabCount - 1);
+      _hoverIndex = target;
+      _springToIndex(target.toDouble());
     }
   }
 
-  void _handleDragStart(DragStartDetails details, double totalWidth) {
+  @override
+  void dispose() {
+    _positionController.dispose();
+    _lensController.dispose();
+    super.dispose();
+  }
+
+  void _springToIndex(double targetIndex, {double? velocity}) {
+    final reduceAnim = ref.read(reduceAnimationProvider);
+    if (reduceAnim) {
+      _positionController.value = targetIndex;
+      return;
+    }
+    // Under-damped bouncy iOS spring so the pill overshoots and bounces into place
+    const bouncySpring = SpringDescription(mass: 1.0, stiffness: 235, damping: 14.2);
+    _positionController.animateWith(
+      SpringSimulation(
+        bouncySpring,
+        _positionController.value,
+        targetIndex,
+        velocity ?? _positionController.velocity,
+      ),
+    );
+  }
+
+  void _springLensTo(double target) {
+    final reduceAnim = ref.read(reduceAnimationProvider);
+    if (reduceAnim) {
+      _lensController.value = target;
+      return;
+    }
+    const lensSpring = SpringDescription(mass: 1.0, stiffness: 270, damping: 14.5);
+    _lensController.animateWith(
+      SpringSimulation(
+        lensSpring,
+        _lensController.value,
+        target,
+        _lensController.velocity,
+      ),
+    );
+  }
+
+  double _xToTabPosition(double dx, double totalWidth) {
+    final tabWidth = totalWidth / _tabCount;
+    return ((dx - tabWidth / 2) / tabWidth).clamp(-0.18, (_tabCount - 1) + 0.18);
+  }
+
+  void _handlePointerDown(PointerDownEvent event, double totalWidth) {
+    _activePointer = event.pointer;
+    _pointerDownTime = DateTime.now();
+    _downX = event.localPosition.dx;
+    _hasDragged = false;
+
+    final pos = _xToTabPosition(event.localPosition.dx, totalWidth);
+    final newHover = pos.round().clamp(0, _tabCount - 1);
+
     setState(() {
-      _isDragging = true;
-      _dragX = details.localPosition.dx.clamp(0.0, totalWidth);
-      final tabWidth = totalWidth / _tabCount;
-      _hoverIndex = (_dragX / tabWidth).floor().clamp(0, _tabCount - 1);
+      _isInteracting = true;
+      _hoverIndex = newHover;
+      _velocityX = 0.0;
     });
+
+    _springLensTo(1.0);
+
+    // If touching on/near the current pill, lock 1:1 immediately so dragging starts with zero lag.
+    // If touching a distant tab, launch a single spring toward that tab (never reset on jitter!).
+    if ((pos - _positionController.value).abs() <= 0.65) {
+      _positionController.stop();
+      _positionController.value = pos;
+    } else {
+      _springToIndex(pos);
+    }
     HapticFeedback.selectionClick();
   }
 
-  void _handleDragUpdate(DragUpdateDetails details, double totalWidth) {
-    final tabWidth = totalWidth / _tabCount;
-    final newX = details.localPosition.dx.clamp(0.0, totalWidth);
-    final newHover = (newX / tabWidth).floor().clamp(0, _tabCount - 1);
+  void _handlePointerMove(PointerMoveEvent event, double totalWidth) {
+    if (_activePointer != null && event.pointer != _activePointer) return;
 
+    // Ignore micro-jitter (< 1.5px) until intentional finger drag begins so a tap spring isn't cancelled
+    if (!_hasDragged && (event.localPosition.dx - _downX).abs() < 1.5) {
+      return;
+    }
+    _hasDragged = true;
+
+    final pos = _xToTabPosition(event.localPosition.dx, totalWidth);
+    final newHover = pos.round().clamp(0, _tabCount - 1);
     if (newHover != _hoverIndex) {
       HapticFeedback.selectionClick();
     }
 
-    setState(() {
-      _dragX = newX;
-      _hoverIndex = newHover;
-    });
+    _velocityX = (_velocityX * 0.55) + (event.delta.dx * 0.45);
+    _hoverIndex = newHover;
+
+    // Set controller value directly for 1:1 immediate finger tracking (never call animateWith on every move frame!)
+    if (_positionController.isAnimating) {
+      _positionController.stop();
+    }
+    _positionController.value = pos;
   }
 
-  void _handleDragEnd(DragEndDetails details, double totalWidth) {
+  void _handlePointerUp(PointerUpEvent event, double totalWidth) {
+    if (_activePointer != null && event.pointer != _activePointer) return;
+    _activePointer = null;
+    final pos = _xToTabPosition(event.localPosition.dx, totalWidth);
+    final targetIndex = pos.round().clamp(0, _tabCount - 1);
+    final holdMs = _pointerDownTime != null
+        ? DateTime.now().difference(_pointerDownTime!).inMilliseconds
+        : 300;
     final tabWidth = totalWidth / _tabCount;
-    final targetIndex = (_dragX / tabWidth).floor().clamp(0, _tabCount - 1);
+    final releaseVelocity = (_velocityX / tabWidth) * 14.0;
 
     setState(() {
-      _isDragging = false;
+      _isInteracting = false;
+      _hasDragged = false;
       _hoverIndex = targetIndex;
+      _velocityX = 0.0;
     });
 
+    // If it was a quick tap, let the bouncy magnifying droplet swell briefly while flying
+    // to the target tab, then bounce back into the resting frosted pill.
+    if (holdMs < 160) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted && !_isInteracting) {
+          _springLensTo(0.0);
+        }
+      });
+    } else {
+      _springLensTo(0.0);
+    }
+
+    _springToIndex(targetIndex.toDouble(), velocity: releaseVelocity);
     HapticFeedback.lightImpact();
     widget.onTabSelected(targetIndex);
   }
 
-  void _handleDragCancel() {
+  void _handlePointerCancel(PointerCancelEvent event) {
+    if (_activePointer != null && event.pointer != _activePointer) return;
+    _activePointer = null;
+    final targetIndex = _hoverIndex.clamp(0, _tabCount - 1);
     setState(() {
-      _isDragging = false;
-      _hoverIndex = widget.selectedIndex < _tabCount ? widget.selectedIndex : 0;
+      _isInteracting = false;
+      _hasDragged = false;
+      _velocityX = 0.0;
     });
+    _springLensTo(0.0);
+    _springToIndex(targetIndex.toDouble());
+    widget.onTabSelected(targetIndex);
   }
 
   @override
@@ -239,156 +337,48 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final marginBottom = bottomPadding > 0 ? bottomPadding : 16.0;
 
-    final reduceAnim = ref.watch(reduceAnimationProvider);
     final glassEnabled = ref.watch(liquidGlassProvider);
     final intensity = ref.watch(liquidGlassIntensityProvider);
     final opacity = ref.watch(liquidGlassOpacityProvider);
 
-    final sigma = glassEnabled ? intensity : 0.0;
-    final alpha = glassEnabled ? opacity : 0.85;
+    // Rich, creamy frosted blur like Picture 1 & 2 (sigma ~ 28, low dark tint so colors bloom through)
+    final sigma = glassEnabled ? intensity.clamp(24.0, 36.0) : 24.0;
+    final alpha = glassEnabled ? opacity.clamp(0.24, 0.38) : 0.32;
 
-    // AMOLED Liquid Glass base color
     final glassColor = isDark
-        ? const Color(0xFF101018).withValues(alpha: alpha)
-        : Colors.white.withValues(alpha: alpha);
+        ? Colors.black.withValues(alpha: alpha)
+        : Colors.white.withValues(alpha: alpha.clamp(0.68, 0.82));
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 350),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.25),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: widget.isDocked
-          ? _buildDockedCapsule(context, ref, marginBottom, isDark, sigma, alpha)
-          : _buildExpandedNavBar(
-              context,
-              marginBottom,
-              isDark,
-              glassColor,
-              sigma,
-              alpha,
-              reduceAnim,
-            ),
+    return _buildExpandedNavBar(
+      context,
+      marginBottom,
+      isDark,
+      glassColor,
+      sigma,
     );
   }
 
-  /// Compact iOS Docking Capsule on Scroll Down (Screenshot 3)
-  Widget _buildDockedCapsule(
-    BuildContext context,
-    WidgetRef ref,
-    double marginBottom,
-    bool isDark,
-    double sigma,
-    double alpha,
-  ) {
-    final playerState = ref.watch(musicPlayerProvider);
-    final track = playerState.currentTrack;
-
-    return Container(
-      key: const ValueKey('docked_capsule'),
-      margin: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        bottom: marginBottom,
-      ),
-      height: 52,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Left Circle: Home (Active tab)
-          _DockCircleButton(
-            icon: Icons.home_rounded,
-            iconColor: const Color(0xFFFA2D48),
-            isDark: isDark,
-            sigma: sigma,
-            alpha: alpha,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              ref.read(isDockedCapsuleProvider.notifier).state = false;
-              widget.onTabSelected(0);
-            },
-          ),
-
-          const SizedBox(width: 8),
-
-          // Center Capsule: Compact Mini Player
-          if (track != null)
-            Expanded(
-              child: _DockMiniPlayerCapsule(
-                track: track,
-                isPlaying: playerState.isPlaying,
-                isDark: isDark,
-                sigma: sigma,
-                alpha: alpha,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    PageRouteBuilder(
-                      transitionDuration: const Duration(milliseconds: 420),
-                      pageBuilder: (_, __, ___) => const NowPlayingScreen(),
-                      transitionsBuilder: (_, animation, __, child) {
-                        return SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 1),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          )),
-                          child: child,
-                        );
-                      },
-                    ),
-                  );
-                },
-                onPlayPause: () {
-                  HapticFeedback.selectionClick();
-                  ref.read(musicPlayerProvider.notifier).togglePlayPause();
-                },
-              ),
-            )
-          else
-            const Spacer(),
-
-          const SizedBox(width: 8),
-
-          // Right Circle: Search
-          _DockCircleButton(
-            icon: Icons.search_rounded,
-            iconColor: Colors.white,
-            isDark: isDark,
-            sigma: sigma,
-            alpha: alpha,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onTabSelected(1);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Full 5-Tab Navigation Bar with Liquid Drag Bubble (Screenshot 1 & Screenshot 4)
+  /// Full 5-Tab Bar matching Picture 1 (Frosted Blur + Concentric Glowing Pill at rest)
+  /// and Picture 2 (Unclipped Clear Magnifying Droplet with Bouncy Spring Physics on slide/tap).
   Widget _buildExpandedNavBar(
     BuildContext context,
     double marginBottom,
     bool isDark,
     Color glassColor,
     double sigma,
-    double alpha,
-    bool reduceAnim,
   ) {
+    // Allow unbounded spring overshoot for bouncy droplet animation
+    final lensSpringVal = _lensController.value;
+    final clampedLens = lensSpringVal.clamp(0.0, 1.0);
+
+    const tabs = [
+      _TabSpec(Icons.home_outlined, Icons.home_rounded, 'Home'),
+      _TabSpec(Icons.search_outlined, Icons.search_rounded, 'Search'),
+      _TabSpec(Icons.auto_stories_outlined, Icons.auto_stories_rounded, 'Manga'),
+      _TabSpec(Icons.video_library_outlined, Icons.video_library_rounded, 'Library'),
+      _TabSpec(Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
+    ];
+
     return Container(
       key: const ValueKey('expanded_navbar'),
       margin: EdgeInsets.only(
@@ -396,517 +386,466 @@ class _NeumorphicNavBarState extends ConsumerState<_NeumorphicNavBar> {
         right: 16,
         bottom: marginBottom,
       ),
-      height: 66,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(33),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(33),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: sigma > 0 ? sigma : 0.001, sigmaY: sigma > 0 ? sigma : 0.001),
-          child: Container(
-            decoration: BoxDecoration(
-              color: glassColor,
-              borderRadius: BorderRadius.circular(33),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.18 + (alpha * 0.12))
-                    : Colors.black.withValues(alpha: 0.08),
-                width: 1.0,
-              ),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final totalWidth = constraints.maxWidth;
-                final tabWidth = totalWidth / _tabCount;
+      height: _barHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          final tabWidth = totalWidth / _tabCount;
 
-                // While dragging: expand to a big liquid bubble lens! (Screenshot 4)
-                final pillWidth = _isDragging ? 68.0 : 52.0;
-                final pillHeight = _isDragging ? 52.0 : 44.0;
+          // Combine finger drag velocity + spring velocity for bouncy jelly squash & stretch
+          final springSpeed = (_positionController.velocity * 3.2).abs();
+          final dragSpeed = (_velocityX.abs() * 1.9);
+          final stretchX = (springSpeed + dragSpeed).clamp(0.0, 26.0);
 
-                final normalPillLeft = widget.selectedIndex < _tabCount
-                    ? widget.selectedIndex * tabWidth + (tabWidth - pillWidth) / 2
-                    : 0.0;
-                final draggingPillLeft =
-                    (_dragX - pillWidth / 2).clamp(0.0, totalWidth - pillWidth);
-                final activePillLeft = _isDragging ? draggingPillLeft : normalPillLeft;
+          // At rest (Picture 1): concentric frosted pill (height: 58 inside 66px bar -> 4px uniform inset).
+          // When sliding/bouncing (Picture 2): swells to height 84px (overflowing 9px above & below bar)
+          // and stretches horizontally with velocity.
+          final restWidth = tabWidth + 2.0;
+          final restHeight = _barHeight - 8.0; // 58px -> 4px inset top/bottom
+          final activeDropletWidth = 86.0 + stretchX;
+          final activeDropletHeight = 84.0 - (stretchX * 0.22);
 
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onHorizontalDragStart: (d) => _handleDragStart(d, totalWidth),
-                  onHorizontalDragUpdate: (d) => _handleDragUpdate(d, totalWidth),
-                  onHorizontalDragEnd: (d) => _handleDragEnd(d, totalWidth),
-                  onHorizontalDragCancel: _handleDragCancel,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // ── Liquid Glass Active Indicator / Lens (Screenshot 4) ──
-                      AnimatedPositioned(
-                        duration: _isDragging
-                            ? const Duration(milliseconds: 20)
-                            : (reduceAnim ? Duration.zero : const Duration(milliseconds: 380)),
-                        curve: _isDragging ? Curves.linear : Curves.easeOutBack,
-                        left: activePillLeft,
-                        width: pillWidth,
-                        height: pillHeight,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(pillHeight / 2),
-                            color: isDark
-                                ? (_isDragging
-                                    ? const Color(0xFFFA2D48).withValues(alpha: 0.28)
-                                    : Colors.white.withValues(alpha: 0.15))
-                                : (_isDragging
-                                    ? const Color(0xFFFA2D48).withValues(alpha: 0.22)
-                                    : Colors.black.withValues(alpha: 0.08)),
-                            border: Border.all(
-                              color: isDark
-                                  ? (_isDragging
-                                      ? Colors.white.withValues(alpha: 0.60)
-                                      : Colors.white.withValues(alpha: 0.35))
-                                  : (_isDragging
-                                      ? const Color(0xFFFA2D48).withValues(alpha: 0.70)
-                                      : Colors.black.withValues(alpha: 0.12)),
-                              width: _isDragging ? 1.4 : 1.0,
-                            ),
-                            boxShadow: [
-                              // Translucent liquid glow ring
-                              BoxShadow(
-                                color: const Color(0xFFFA2D48).withValues(
-                                  alpha: _isDragging ? 0.45 : 0.25,
-                                ),
-                                blurRadius: _isDragging ? 22 : 12,
-                                spreadRadius: _isDragging ? 2.5 : 0.5,
-                              ),
-                              if (_isDragging)
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.35),
-                                  blurRadius: 10,
-                                  spreadRadius: -1,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+          final pillWidth = lerpDouble(restWidth, activeDropletWidth, lensSpringVal)!
+              .clamp(48.0, 140.0);
+          final pillHeight = lerpDouble(restHeight, activeDropletHeight, lensSpringVal)!
+              .clamp(44.0, 104.0);
 
-                      // ── All 5 Tab Destinations (Home, Search, Manga, Library, Settings) ──
-                      Row(
-                        children: [
-                          _NeumorphTabItem(
-                            icon: Icons.home_outlined,
-                            activeIcon: Icons.home_rounded,
-                            label: 'Home',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 0
-                                : widget.selectedIndex == 0,
-                            isMagnified: _isDragging && _hoverIndex == 0,
-                            isDark: isDark,
-                            hasGlow: widget.isPlaying,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(0);
-                            },
-                          ),
-                          _NeumorphTabItem(
-                            icon: Icons.search_outlined,
-                            activeIcon: Icons.search_rounded,
-                            label: 'Search',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 1
-                                : widget.selectedIndex == 1,
-                            isMagnified: _isDragging && _hoverIndex == 1,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(1);
-                            },
-                          ),
-                          _NeumorphTabItem(
-                            icon: Icons.auto_stories_outlined,
-                            activeIcon: Icons.auto_stories_rounded,
-                            label: 'Manga',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 2
-                                : widget.selectedIndex == 2,
-                            isMagnified: _isDragging && _hoverIndex == 2,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(2);
-                            },
-                          ),
-                          _NeumorphTabItem(
-                            icon: Icons.video_library_outlined,
-                            activeIcon: Icons.video_library_rounded,
-                            label: 'Library',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 3
-                                : widget.selectedIndex == 3,
-                            isMagnified: _isDragging && _hoverIndex == 3,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(3);
-                            },
-                          ),
-                          _NeumorphTabItem(
-                            icon: Icons.settings_outlined,
-                            activeIcon: Icons.settings_rounded,
-                            label: 'Settings',
-                            isSelected: _isDragging
-                                ? _hoverIndex == 4
-                                : widget.selectedIndex == 4,
-                            isMagnified: _isDragging && _hoverIndex == 4,
-                            isDark: isDark,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onTabSelected(4);
-                            },
+          final currentTabPos = _positionController.value;
+          final centerX = (currentTabPos + 0.5) * tabWidth;
+          // At rest, clamp with a 4px inset so the leftmost/rightmost pill curve is concentric with the bar's 33px curve
+          final minLeft = lerpDouble(4.0, -6.0, clampedLens)!;
+          final maxLeft = lerpDouble(
+            totalWidth - pillWidth - 4.0,
+            totalWidth - pillWidth + 6.0,
+            clampedLens,
+          )!;
+          final pillLeft = (centerX - pillWidth / 2).clamp(minLeft, maxLeft);
+          final pillTop = (_barHeight - pillHeight) / 2;
+          final dropletRect = Rect.fromLTWH(pillLeft, pillTop, pillWidth, pillHeight);
+
+          return Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: (e) => _handlePointerDown(e, totalWidth),
+            onPointerMove: (e) => _handlePointerMove(e, totalWidth),
+            onPointerUp: (e) => _handlePointerUp(e, totalWidth),
+            onPointerCancel: _handlePointerCancel,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragUpdate: (_) {},
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // ── 1. Creamy Frosted Blur Bar Capsule (punches out blur inside the clear droplet when sliding, like Picture 2) ──
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(_barHeight / 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+                            blurRadius: 24,
+                            blurStyle: BlurStyle.outer,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Circular Glass Button for the Dock (Screenshot 3)
-class _DockCircleButton extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final bool isDark;
-  final double sigma;
-  final double alpha;
-  final VoidCallback onTap;
-
-  const _DockCircleButton({
-    required this.icon,
-    required this.iconColor,
-    required this.isDark,
-    required this.sigma,
-    required this.alpha,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: sigma > 0 ? sigma : 0.001, sigmaY: sigma > 0 ? sigma : 0.001),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? const Color(0xFF14141E).withValues(alpha: alpha)
-                    : Colors.white.withValues(alpha: alpha),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.22)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.0,
-                ),
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact Mini Player Capsule in Dock Mode (Screenshot 3)
-class _DockMiniPlayerCapsule extends StatelessWidget {
-  final MusicTrack track;
-  final bool isPlaying;
-  final bool isDark;
-  final double sigma;
-  final double alpha;
-  final VoidCallback onTap;
-  final VoidCallback onPlayPause;
-
-  const _DockMiniPlayerCapsule({
-    required this.track,
-    required this.isPlaying,
-    required this.isDark,
-    required this.sigma,
-    required this.alpha,
-    required this.onTap,
-    required this.onPlayPause,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(25),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: sigma > 0 ? sigma : 0.001, sigmaY: sigma > 0 ? sigma : 0.001),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF14141E).withValues(alpha: alpha)
-                    : Colors.white.withValues(alpha: alpha),
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.22)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.0,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Mini Artwork
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: track.albumArtUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: track.albumArtUrl!,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(
-                                color: const Color(0xFF202028),
-                                child: const Icon(Icons.music_note, color: Colors.white24, size: 18),
+                      child: ClipPath(
+                        clipper: _BarMinusDropletClipper(
+                          barRadius: _barHeight / 2,
+                          dropletRect: dropletRect,
+                          punchFactor: clampedLens,
+                        ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                            sigmaX: sigma,
+                            sigmaY: sigma,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(_barHeight / 2),
+                              color: glassColor,
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withValues(alpha: 0.10),
+                                        Colors.white.withValues(alpha: 0.03),
+                                        Colors.black.withValues(alpha: 0.18),
+                                      ]
+                                    : [
+                                        Colors.white.withValues(alpha: 0.55),
+                                        Colors.white.withValues(alpha: 0.25),
+                                      ],
                               ),
-                            )
-                          : Container(
-                              color: const Color(0xFF202028),
-                              child: const Icon(Icons.music_note, color: Colors.white24, size: 18),
                             ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(width: 8),
-
-                  // Track Info
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          track.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        Text(
-                          track.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white60 : Colors.black54,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                      ],
+                  // ── 1b. Outer Bar Specular Glass Rim (Picture 1 & 2) ──
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _OuterCapsuleRimPainter(isDark: isDark),
+                      ),
                     ),
                   ),
 
-                  // Play/Pause button
-                  IconButton(
-                    icon: Icon(
-                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: isDark ? Colors.white : Colors.black87,
-                      size: 24,
+                  // ── 2. Bouncy Pill / Clear Magnifying Liquid Droplet (Placed BEHIND Tab Icons Row!) ──
+                  Positioned(
+                    left: pillLeft,
+                    top: pillTop,
+                    width: pillWidth,
+                    height: pillHeight,
+                    child: IgnorePointer(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        clipBehavior: Clip.none,
+                        children: [
+                          // When sliding/bouncing (Picture 2): Real optical RawMagnifier reveals the sharp,
+                          // unblurred, magnified background through the frosted bar!
+                          if (clampedLens > 0.02)
+                            Opacity(
+                              opacity: (clampedLens * 1.25).clamp(0.0, 1.0),
+                              child: RawMagnifier(
+                                size: Size(pillWidth, pillHeight),
+                                magnificationScale: 1.0 + (0.22 * clampedLens),
+                                decoration: MagnifierDecoration(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(pillHeight / 2),
+                                  ),
+                                  shadows: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.38 * clampedLens),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // Resting Frosted Pillow (Picture 1) morphing into Clear Droplet Rim (Picture 2)
+                          CustomPaint(
+                            painter: _LiquidGlassPillPainter(
+                              isDark: isDark,
+                              dropletFactor: clampedLens,
+                              velocityX: _velocityX + _positionController.velocity * 2.0,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                    onPressed: onPlayPause,
+                  ),
+
+                  // ── 3. All 5 Tab Destinations (Rendered ON TOP of the Droplet in crisp white, matching Picture 1 & 2) ──
+                  Row(
+                    children: List.generate(_tabCount, (i) {
+                      final dist = (currentTabPos - i).abs();
+                      final proximity = (1.0 - dist).clamp(0.0, 1.0);
+                      // Bouncy magnification as the pill/droplet glides under each tab
+                      final magnifyScale = 1.0 + (proximity * (0.05 + 0.10 * clampedLens));
+                      final isSelected = proximity > 0.45;
+                      return Expanded(
+                        child: Transform.scale(
+                          scale: magnifyScale,
+                          child: _TabDestinationItem(
+                            spec: tabs[i],
+                            isSelected: isSelected,
+                            proximity: proximity,
+                            isDark: isDark,
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-/// Navigation tab item with animated scale + magnifying lens effect
-class _NeumorphTabItem extends StatefulWidget {
+class _TabSpec {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final bool isSelected;
-  final bool isMagnified;
-  final bool isDark;
-  final bool hasGlow;
-  final VoidCallback onTap;
+  const _TabSpec(this.icon, this.activeIcon, this.label);
+}
 
-  const _NeumorphTabItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
+class _TabDestinationItem extends StatelessWidget {
+  final _TabSpec spec;
+  final bool isSelected;
+  final double proximity;
+  final bool isDark;
+
+  const _TabDestinationItem({
+    required this.spec,
     required this.isSelected,
-    this.isMagnified = false,
+    required this.proximity,
     required this.isDark,
-    this.hasGlow = false,
-    required this.onTap,
   });
 
   @override
-  State<_NeumorphTabItem> createState() => _NeumorphTabItemState();
-}
-
-class _NeumorphTabItemState extends State<_NeumorphTabItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _scaleController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _scaleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _scaleController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    const appleRed = Color(0xFFFA2D48);
-    final selectedColor = widget.isSelected
-        ? appleRed
-        : (widget.isDark ? Colors.white60 : Colors.black54);
+    final activeColor = isDark ? Colors.white : Colors.black;
+    final inactiveColor = isDark
+        ? Colors.white.withValues(alpha: 0.78)
+        : Colors.black.withValues(alpha: 0.65);
+    final color = Color.lerp(inactiveColor, activeColor, proximity)!;
 
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => _scaleController.forward(),
-        onTapUp: (_) {
-          _scaleController.reverse();
-          widget.onTap();
-        },
-        onTapCancel: () => _scaleController.reverse(),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutBack,
-            scale: widget.isMagnified ? 1.20 : 1.0,
-            child: SizedBox(
-              height: 66,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          widget.isSelected ? widget.activeIcon : widget.icon,
-                          key: ValueKey(widget.isSelected),
-                          size: 22,
-                          color: selectedColor,
-                        ),
-                      ),
-                      if (widget.hasGlow && widget.isSelected)
-                        Positioned(
-                          top: -2,
-                          right: -3,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: appleRed,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: appleRed.withValues(alpha: 0.8),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: selectedColor,
-                      letterSpacing: -0.2,
-                    ),
-                    child: Text(widget.label),
-                  ),
-                ],
-              ),
+    return SizedBox(
+      height: 66,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSelected ? spec.activeIcon : spec.icon,
+            size: 24,
+            color: color,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            spec.label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: -0.2,
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
+
+/// Clips the outer bar to its capsule RRect, and when the magnifying droplet is active
+/// (Picture 2), subtracts the droplet oval so the area inside the droplet is unblurred!
+class _BarMinusDropletClipper extends CustomClipper<Path> {
+  final double barRadius;
+  final Rect dropletRect;
+  final double punchFactor;
+
+  const _BarMinusDropletClipper({
+    required this.barRadius,
+    required this.dropletRect,
+    required this.punchFactor,
+  });
+
+  @override
+  Path getClip(Size size) {
+    final barPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(barRadius)),
+      );
+    if (punchFactor <= 0.08) {
+      return barPath;
+    }
+    // Smoothly expand the clear unblurred hole inside the droplet
+    final holeRect = Rect.fromCenter(
+      center: dropletRect.center,
+      width: dropletRect.width * punchFactor.clamp(0.0, 1.0),
+      height: dropletRect.height * punchFactor.clamp(0.0, 1.0),
+    );
+    final holePath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(holeRect, Radius.circular(holeRect.height / 2)),
+      );
+    return Path.combine(PathOperation.difference, barPath, holePath);
+  }
+
+  @override
+  bool shouldReclip(covariant _BarMinusDropletClipper old) =>
+      old.barRadius != barRadius ||
+      old.dropletRect != dropletRect ||
+      old.punchFactor != punchFactor;
+}
+
+/// Paints the delicate directional glass specular edge around the outer capsule bar (Picture 1 & 2)
+class _OuterCapsuleRimPainter extends CustomPainter {
+  final bool isDark;
+  const _OuterCapsuleRimPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(0.5);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2));
+
+    final rimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDark
+            ? [
+                Colors.white.withValues(alpha: 0.38),
+                Colors.white.withValues(alpha: 0.08),
+                Colors.white.withValues(alpha: 0.06),
+                Colors.white.withValues(alpha: 0.30),
+              ]
+            : [
+                Colors.black.withValues(alpha: 0.10),
+                Colors.black.withValues(alpha: 0.04),
+                Colors.black.withValues(alpha: 0.04),
+                Colors.black.withValues(alpha: 0.12),
+              ],
+        stops: const [0.0, 0.35, 0.65, 1.0],
+      ).createShader(rect);
+
+    canvas.drawRRect(rrect, rimPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _OuterCapsuleRimPainter old) => old.isDark != isDark;
+}
+
+/// Paints:
+/// - At rest (`dropletFactor == 0`): the luminous frosted milky-glass pillow (Picture 1)
+/// - When dragging/bouncing (`dropletFactor -> 1`): the crystal-clear optical lens bevel & meniscus rim (Picture 2)
+class _LiquidGlassPillPainter extends CustomPainter {
+  final bool isDark;
+  final double dropletFactor;
+  final double velocityX;
+
+  const _LiquidGlassPillPainter({
+    required this.isDark,
+    required this.dropletFactor,
+    required this.velocityX,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final radius = Radius.circular(size.height / 2);
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+    final restAlpha = (1.0 - dropletFactor).clamp(0.0, 1.0);
+
+    // ── A. Resting Luminous Frosted Glass Pillow (Picture 1) ──
+    if (restAlpha > 0.01) {
+      if (isDark) {
+        // Radial inner frosted glow (brighter around the pillow edge, soft translucent center)
+        final radialPaint = Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-0.15, -0.2),
+            radius: 0.78,
+            colors: [
+              Colors.white.withValues(alpha: 0.12 * restAlpha),
+              Colors.white.withValues(alpha: 0.22 * restAlpha),
+              Colors.white.withValues(alpha: 0.32 * restAlpha),
+            ],
+            stops: const [0.0, 0.68, 1.0],
+          ).createShader(rect);
+        canvas.drawRRect(rrect, radialPaint);
+
+        // Top-left to bottom-right milky glass sheen
+        final sheenPaint = Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.24 * restAlpha),
+              Colors.white.withValues(alpha: 0.06 * restAlpha),
+              Colors.white.withValues(alpha: 0.16 * restAlpha),
+            ],
+            stops: const [0.0, 0.55, 1.0],
+          ).createShader(rect);
+        canvas.drawRRect(rrect, sheenPaint);
+
+        // Crisp frosted pillow rim
+        final restRimPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: 0.45 * restAlpha),
+              Colors.white.withValues(alpha: 0.12 * restAlpha),
+              Colors.white.withValues(alpha: 0.28 * restAlpha),
+            ],
+          ).createShader(rect);
+        canvas.drawRRect(rrect.deflate(0.5), restRimPaint);
+      } else {
+        // Light mode: delicate translucent frosted glass pillow (never a solid white blob)
+        final lightPillowPaint = Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-0.15, -0.2),
+            radius: 0.80,
+            colors: [
+              Colors.black.withValues(alpha: 0.05 * restAlpha),
+              Colors.black.withValues(alpha: 0.09 * restAlpha),
+              Colors.black.withValues(alpha: 0.13 * restAlpha),
+            ],
+            stops: const [0.0, 0.70, 1.0],
+          ).createShader(rect);
+        canvas.drawRRect(rrect, lightPillowPaint);
+
+        final lightRimPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: 0.75 * restAlpha),
+              Colors.black.withValues(alpha: 0.06 * restAlpha),
+              Colors.black.withValues(alpha: 0.12 * restAlpha),
+            ],
+          ).createShader(rect);
+        canvas.drawRRect(rrect.deflate(0.5), lightRimPaint);
+      }
+    }
+
+    // ── B. Active Clear Magnifying Liquid Droplet Bevel & Rim (Picture 2) ──
+    if (dropletFactor > 0.01) {
+      // Peripheral glass lens refraction bevel (center 0.0..0.76 is 100% clear so the magnified image is sharp)
+      final bevelPaint = Paint()
+        ..shader = RadialGradient(
+          center: Alignment.center,
+          radius: 0.52,
+          colors: [
+            Colors.transparent,
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.22 * dropletFactor),
+            Colors.white.withValues(alpha: 0.26 * dropletFactor),
+          ],
+          stops: const [0.0, 0.76, 0.91, 1.0],
+        ).createShader(rect);
+      canvas.drawRRect(rrect, bevelPaint);
+
+      // Crisp specular glass meniscus arc at top and bottom of the droplet (matching Picture 2)
+      final tilt = (velocityX * 0.015).clamp(-0.25, 0.25);
+      final dropletRimPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.25
+        ..shader = LinearGradient(
+          begin: Alignment(-tilt, -1.0),
+          end: Alignment(tilt, 1.0),
+          colors: [
+            Colors.white.withValues(alpha: 0.68 * dropletFactor),
+            Colors.white.withValues(alpha: 0.12 * dropletFactor),
+            Colors.white.withValues(alpha: 0.12 * dropletFactor),
+            Colors.white.withValues(alpha: 0.52 * dropletFactor),
+          ],
+          stops: const [0.0, 0.32, 0.68, 1.0],
+        ).createShader(rect);
+      canvas.drawRRect(rrect.deflate(0.6), dropletRimPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LiquidGlassPillPainter old) =>
+      old.isDark != isDark ||
+      old.dropletFactor != dropletFactor ||
+      old.velocityX != velocityX;
+}
+

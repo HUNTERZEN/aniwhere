@@ -230,7 +230,8 @@ class _WebViewPlayerScreenState extends State<WebViewPlayerScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: const Color(0xFF181820),
+                        foregroundColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 12),

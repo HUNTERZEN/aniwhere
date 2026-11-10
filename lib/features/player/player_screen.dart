@@ -26,9 +26,11 @@ class PlayerScreen extends StatelessWidget {
       overrides: [
         playerStateProvider.overrideWith((ref) {
           final chapterRepo = ref.read(chapterRepositoryProvider);
+          final settingsRepo = ref.read(settingsRepositoryProvider);
           final notifier = PlayerStateNotifier(
             params: params,
             chapterRepo: chapterRepo,
+            settingsRepo: settingsRepo,
           );
           ref.onDispose(() {
             notifier.saveProgressNow();
@@ -147,7 +149,8 @@ class _PlayerScreenInnerState extends ConsumerState<_PlayerScreenInner> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: const Color(0xFF181820),
+                foregroundColor: Colors.white,
               ),
             ),
             const SizedBox(height: 12),
