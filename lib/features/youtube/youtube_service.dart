@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import '../../core/services/native_bridge.dart';
 import '../../core/services/settings_storage.dart';
 
-/// Model representing a YouTube video item in feeds, search results, or Up Next.
+/// Model representing a YouTube video item in feeds, search results, or More videos.
 class YouTubeVideoItem {
   final String videoId;
   final String title;
@@ -71,6 +71,38 @@ class YouTubeVideoItem {
   }
 }
 
+/// Model representing a real YouTube comment item.
+class YouTubeCommentItem {
+  final String authorName;
+  final String? authorAvatarUrl;
+  final String text;
+  final String publishedTime;
+  final String likeCount;
+  final String replyCount;
+
+  const YouTubeCommentItem({
+    required this.authorName,
+    this.authorAvatarUrl,
+    required this.text,
+    this.publishedTime = '',
+    this.likeCount = '',
+    this.replyCount = '',
+  });
+}
+
+/// Model representing Watch Next data (More videos + Real Comments).
+class YouTubeWatchNextData {
+  final List<YouTubeVideoItem> relatedVideos;
+  final List<YouTubeCommentItem> comments;
+  final String commentCountText;
+
+  const YouTubeWatchNextData({
+    this.relatedVideos = const [],
+    this.comments = const [],
+    this.commentCountText = '',
+  });
+}
+
 /// Model representing a selectable video quality stream (from 144p up to 2160p 4K).
 class YouTubeQualityStream {
   final String label;
@@ -85,6 +117,8 @@ class YouTubeQualityStream {
   final bool isMuxed;
   final bool isHls;
   final String userAgent;
+  final int contentLength;
+  final String mimeType;
 
   const YouTubeQualityStream({
     required this.label,
@@ -100,7 +134,30 @@ class YouTubeQualityStream {
     this.isHls = false,
     this.userAgent =
         'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip',
+    this.contentLength = 0,
+    this.mimeType = 'video/mp4',
   });
+
+  YouTubeQualityStream copyWith({
+    String? audioUrl,
+  }) {
+    return YouTubeQualityStream(
+      label: label,
+      badge: badge,
+      height: height,
+      fps: fps,
+      bitrate: bitrate,
+      itag: itag,
+      codec: codec,
+      videoUrl: videoUrl,
+      audioUrl: audioUrl ?? this.audioUrl,
+      isMuxed: isMuxed,
+      isHls: isHls,
+      userAgent: userAgent,
+      contentLength: contentLength,
+      mimeType: mimeType,
+    );
+  }
 
   String get formatSummary => '${height}p · $codec · itag $itag';
 }
@@ -132,7 +189,7 @@ class YouTubeResolvedVideo {
 }
 
 /// Ad-Free YouTube service synced with the user's Google account (`ytm_cookie`)
-/// and resolving direct streams up to 4K (`2160p`) via `ANDROID_VR` InnerTube.
+/// and resolving direct streams up to 4K (`2160p`) via `ANDROID_VR` & `IOS` InnerTube.
 class YouTubeService {
   static final YouTubeService _instance = YouTubeService._();
   factory YouTubeService() => _instance;
@@ -142,6 +199,8 @@ class YouTubeService {
   static const String _mYtOrigin = 'https://m.youtube.com';
   static const String _vrUserAgent =
       'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip';
+  static const String _iosUserAgent =
+      'com.google.ios.youtube/20.03.02 (iPhone16,2; U; CPU iOS 18_2_1 like Mac OS X;)';
   static const String _androidTestUserAgent =
       'com.google.android.youtube/1.9 (Linux; U; Android 12; US) gzip';
   static const String _webUserAgent =
@@ -342,10 +401,6 @@ class YouTubeService {
   ];
 
   /// Fetch videos for a category chip on the Home screen.
-  /// When signed in with Google (`ytm_cookie`), strictly prioritizes the user's real
-  /// YouTube account feeds: Subscriptions (`FEsubscriptions`), Home recommendations
-  /// (`FEwhat_to_watch`), Watch History (`FEhistory`), and Liked Videos (`FEliked_videos`)
-  /// — never random unsubscribed default videos!
   Future<List<YouTubeVideoItem>> getCategoryFeed(String category) async {
     await ensureFreshCookies();
 
@@ -370,7 +425,6 @@ class YouTubeService {
         final combined = await _fetchPersonalizedAccountHomeFeed(category: category);
         if (combined.isNotEmpty) return combined;
       } else {
-        // Specific topic chip (e.g. Music, Anime, Gaming): filter from account feed first, then authenticated search
         final personal = await _fetchPersonalizedAccountHomeFeed(category: 'All');
         final lower = category.toLowerCase();
         final matched = personal
@@ -394,11 +448,6 @@ class YouTubeService {
     return fallbackVideos;
   }
 
-  /// Combines the signed-in Google account's real `FEwhat_to_watch` (Home recommendations),
-  /// `FEsubscriptions` (Subscribed channels' uploads), `FEhistory` (Watched videos + related),
-  /// and `FEliked_videos` so even if YouTube Watch History is paused on the account (which causes
-  /// `FEwhat_to_watch` alone to be empty), the user still gets 100% their own account's
-  /// subscribed channels and watched videos!
   Future<List<YouTubeVideoItem>> _fetchPersonalizedAccountHomeFeed({
     required String category,
   }) async {
@@ -426,7 +475,6 @@ class YouTubeService {
     }
 
     if (category == 'Today') {
-      // Prioritize recent uploads from Subscribed channels & Home recommendations
       final recentSubs = subs.where((v) {
         final p = v.publishedTimeText.toLowerCase();
         return p.contains('hour') ||
@@ -440,7 +488,6 @@ class YouTubeService {
       addList(homeRecs);
       addList(history);
     } else {
-      // Interleave personalized Home recommendations with Subscribed channels' uploads
       final maxLen = [homeRecs.length, subs.length, history.length]
           .reduce((a, b) => a > b ? a : b);
       for (int i = 0; i < maxLen; i++) {
@@ -457,8 +504,6 @@ class YouTubeService {
       addList(liked);
     }
 
-    // If the user has watched or liked videos, fetch YouTube's official `next` recommendations
-    // seeded from their most recent watched/liked/subscribed video so the feed is rich and 100% tailored!
     if (out.length < 12 && out.isNotEmpty) {
       final seed = out.first;
       final relatedToSeed = await _fetchNextRecommendationsOnly(seed.videoId);
@@ -468,9 +513,6 @@ class YouTubeService {
     return out;
   }
 
-  /// Fetches the user's subscribed channels' videos via `FEsubscriptions`,
-  /// and if needed, queries the user's subscribed channel list via `youtubei/v1/guide`
-  /// and loads videos directly from those subscribed channels!
   Future<List<YouTubeVideoItem>> _fetchAccountSubscriptionsFeed() async {
     final videos = <YouTubeVideoItem>[];
     final seen = <String>{};
@@ -482,7 +524,6 @@ class YouTubeService {
 
     if (videos.length >= 8) return videos;
 
-    // Also query the account's subscribed channels from `youtubei/v1/guide`
     try {
       final res = await _dio.post(
         '$_ytOrigin/youtubei/v1/guide?prettyPrint=false',
@@ -540,13 +581,10 @@ class YouTubeService {
     }
   }
 
-  /// Fetches personalized YouTube browse feed using the signed-in Google account cookie.
-  /// Tries `WEB` first and supplements with `MWEB` if needed.
   Future<List<YouTubeVideoItem>> _fetchAuthenticatedBrowseFeed(String browseId) async {
     final videos = <YouTubeVideoItem>[];
     final seenIds = <String>{};
 
-    // 1. Desktop WEB InnerTube browse (parses both lockupViewModel and videoRenderer)
     try {
       final response = await _dio.post(
         '$_ytOrigin/youtubei/v1/browse?prettyPrint=false',
@@ -571,7 +609,6 @@ class YouTubeService {
       }
     } catch (_) {}
 
-    // 2. MWEB fallback if WEB returned few items
     if (videos.length < 4) {
       try {
         final response = await _dio.post(
@@ -601,7 +638,6 @@ class YouTubeService {
     return videos;
   }
 
-  /// Search YouTube videos directly via InnerTube `youtubei/v1/search` (zero ads, synced with Google account).
   Future<List<YouTubeVideoItem>> searchVideos(String query) async {
     if (query.trim().isEmpty) return fallbackVideos;
     try {
@@ -636,7 +672,6 @@ class YouTubeService {
     }
   }
 
-  /// Live YouTube search autocomplete suggestions.
   Future<List<String>> getSearchSuggestions(String query) async {
     final q = query.trim();
     if (q.isEmpty) return [];
@@ -717,8 +752,6 @@ class YouTubeService {
     }
   }
 
-  /// Parses YouTube's 2025/2026 `lockupViewModel` renderer used in `FEwhat_to_watch` (Home),
-  /// `FEsubscriptions` (Subscriptions), and `youtubei/v1/next` (Up Next / More videos).
   YouTubeVideoItem? _parseLockupViewModel(Map lockup) {
     try {
       final contentType = lockup['contentType']?.toString() ?? '';
@@ -839,7 +872,6 @@ class YouTubeService {
     }
   }
 
-  /// Parses `videoWithContextRenderer` returned by YouTube MWEB `FEwhat_to_watch` and `FEsubscriptions`.
   YouTubeVideoItem? _parseVideoWithContextRenderer(Map r) {
     try {
       final videoId = r['videoId']?.toString() ?? '';
@@ -986,10 +1018,9 @@ class YouTubeService {
     return '';
   }
 
-  /// Resolves direct ad-free video & audio streams from 144p up to 2160p (4K)
-  /// using `ANDROID_VR` as the primary client (which returns un-ciphered, PoToken-free
-  /// streams for music videos, VEVO, Sun TV, trailers, etc.).
-  /// Never passes browser `Origin`/`Referer` headers on `ANDROID_VR` requests.
+  /// Fast stream resolution for immediate playback on first tap!
+  /// Queries `ANDROID_VR` (`Oculus Quest 3`) + `IOS` (`iPhone16,2`) in parallel so every video
+  /// (including brand-new uploads, 1080p, 1440p 2K, and 2160p 4K) resolves on the first attempt!
   Future<YouTubeResolvedVideo> resolveVideo(YouTubeVideoItem video) async {
     final qualities = <YouTubeQualityStream>[];
     String? bestAudioUrl;
@@ -999,53 +1030,199 @@ class YouTubeService {
     String resolvedViews = video.viewCountText;
     String resolvedDesc = video.description ?? '';
 
-    // ── 1. PRIMARY: Clean ANDROID_VR InnerTube Client (returns 144p..2160p 4K direct URLs without PoToken!) ──
-    try {
-      final res = await _dio.post(
-        '$_ytOrigin/youtubei/v1/player?prettyPrint=false',
-        options: Options(
-          headers: {
+    void absorbMeta(String t, String c, String v, String d) {
+      if (t.isNotEmpty) resolvedTitle = t;
+      if (c.isNotEmpty) resolvedChannel = c;
+      if (v.isNotEmpty) resolvedViews = v;
+      if (d.isNotEmpty) resolvedDesc = d;
+    }
+
+    // Run ANDROID_VR, IOS, and ANDROID (format 18) in parallel for 100% reliable 4K/2K/1080p + sound
+    await Future.wait([
+      // 1. ANDROID_VR (with account cookies if signed in)
+      () async {
+        try {
+          final vrHeaders = <String, String>{
             'User-Agent': _vrUserAgent,
             'Content-Type': 'application/json',
             'X-YouTube-Client-Name': '28',
             'X-YouTube-Client-Version': '1.60.19',
-          },
-        ),
-        data: {
-          'videoId': video.videoId,
-          'contentCheckOk': true,
-          'racyCheckOk': true,
-          'context': {
-            'client': {
-              'clientName': 'ANDROID_VR',
-              'clientVersion': '1.60.19',
-              'androidSdkVersion': 34,
-              'hl': 'en',
-              'gl': 'US',
-            },
-          },
-        },
-      );
-      _parsePlayerResponse(
-        res.data,
-        userAgent: _vrUserAgent,
-        qualities: qualities,
-        onMetadata: (t, c, v, d) {
-          if (t.isNotEmpty) resolvedTitle = t;
-          if (c.isNotEmpty) resolvedChannel = c;
-          if (v.isNotEmpty) resolvedViews = v;
-          if (d.isNotEmpty) resolvedDesc = d;
-        },
-        onBestAudio: (url) {
-          if (url.isNotEmpty) {
-            bestAudioUrl = url;
-            audioUa = _vrUserAgent;
+          };
+          final cookie = _savedCookie;
+          if (cookie.isNotEmpty) {
+            vrHeaders['Cookie'] = cookie;
+            final sapisid = _extractSapisid(cookie);
+            if (sapisid != null && sapisid.isNotEmpty) {
+              final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+              final hash = sha1.convert(utf8.encode('$ts $sapisid $_ytOrigin')).toString();
+              vrHeaders['Authorization'] = 'SAPISIDHASH ${ts}_$hash';
+            }
           }
-        },
-      );
-    } catch (_) {}
 
-    // ── 2. ANDROID_TESTSUITE fallback ──
+          final res = await _dio.post(
+            '$_ytOrigin/youtubei/v1/player?prettyPrint=false',
+            options: Options(headers: vrHeaders),
+            data: {
+              'videoId': video.videoId,
+              'contentCheckOk': true,
+              'racyCheckOk': true,
+              'context': {
+                'client': {
+                  'clientName': 'ANDROID_VR',
+                  'clientVersion': '1.60.19',
+                  'deviceMake': 'Oculus',
+                  'deviceModel': 'Quest 3',
+                  'osName': 'Android',
+                  'osVersion': '12L',
+                  'androidSdkVersion': 32,
+                  'hl': 'en',
+                  'gl': 'US',
+                },
+              },
+            },
+          );
+          _parsePlayerResponse(
+            res.data,
+            userAgent: _vrUserAgent,
+            qualities: qualities,
+            onMetadata: absorbMeta,
+            onBestAudio: (url) {
+              if (url.isNotEmpty) {
+                bestAudioUrl = url;
+                audioUa = _vrUserAgent;
+              }
+            },
+          );
+        } catch (_) {}
+      }(),
+
+      // 2. IOS Client (provides direct unthrottled 2160p 4K, 1440p 2K, 1080p, 720p adaptive streams)
+      () async {
+        try {
+          final res = await _dio.post(
+            '$_ytOrigin/youtubei/v1/player?prettyPrint=false',
+            options: Options(
+              headers: {
+                'User-Agent': _iosUserAgent,
+                'Content-Type': 'application/json',
+                'X-YouTube-Client-Name': '5',
+                'X-YouTube-Client-Version': '20.03.02',
+              },
+            ),
+            data: {
+              'videoId': video.videoId,
+              'contentCheckOk': true,
+              'racyCheckOk': true,
+              'context': {
+                'client': {
+                  'clientName': 'IOS',
+                  'clientVersion': '20.03.02',
+                  'deviceMake': 'Apple',
+                  'deviceModel': 'iPhone16,2',
+                  'osName': 'iPhone',
+                  'osVersion': '18.2.1.22C161',
+                  'hl': 'en',
+                  'gl': 'US',
+                },
+              },
+            },
+          );
+          _parsePlayerResponse(
+            res.data,
+            userAgent: _iosUserAgent,
+            qualities: qualities,
+            onMetadata: absorbMeta,
+            onBestAudio: (url) {
+              if (bestAudioUrl == null && url.isNotEmpty) {
+                bestAudioUrl = url;
+                audioUa = _iosUserAgent;
+              }
+            },
+          );
+        } catch (_) {}
+      }(),
+
+      // 3. ANDROID Client (provides guaranteed format 18 muxed 360p with zero bot checks + universal audio stream)
+      () async {
+        try {
+          const androidUa = 'com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip';
+          final res = await _dio.post(
+            '$_ytOrigin/youtubei/v1/player?prettyPrint=false',
+            options: Options(
+              headers: {
+                'User-Agent': androidUa,
+                'Content-Type': 'application/json',
+                'X-YouTube-Client-Name': '3',
+                'X-YouTube-Client-Version': '21.26.364',
+              },
+            ),
+            data: {
+              'videoId': video.videoId,
+              'contentCheckOk': true,
+              'racyCheckOk': true,
+              'context': {
+                'client': {
+                  'clientName': 'ANDROID',
+                  'clientVersion': '21.26.364',
+                  'androidSdkVersion': 30,
+                  'osName': 'Android',
+                  'osVersion': '11',
+                  'hl': 'en',
+                  'gl': 'US',
+                },
+              },
+            },
+          );
+          final dynamic data = res.data is String ? jsonDecode(res.data as String) : res.data;
+          if (data is Map) {
+            final streaming = data['streamingData'];
+            if (streaming is Map) {
+              final formats = streaming['formats'];
+              if (formats is List) {
+                for (final f in formats) {
+                  if (f is! Map) continue;
+                  final url = f['url']?.toString() ?? '';
+                  final mime = f['mimeType']?.toString() ?? '';
+                  final itag = (f['itag'] as num?)?.toInt() ?? 18;
+                  if (url.isNotEmpty && mime.contains('mp4')) {
+                    if (bestAudioUrl == null) {
+                      bestAudioUrl = url;
+                      audioUa = androidUa;
+                    }
+                    if (!qualities.any((q) => q.isMuxed && q.itag == itag)) {
+                      qualities.add(
+                        YouTubeQualityStream(
+                          label: '360p (SD Direct)',
+                          badge: 'SD',
+                          height: 360,
+                          itag: itag,
+                          codec: 'MP4',
+                          videoUrl: url,
+                          isMuxed: true,
+                          userAgent: androidUa,
+                        ),
+                      );
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }(),
+    ]);
+
+    // 4. Ensure every adaptive stream has an audioUrl bound so 1080p, 2K, and 4K have full audio
+    if (bestAudioUrl != null && bestAudioUrl!.isNotEmpty) {
+      for (int i = 0; i < qualities.length; i++) {
+        final q = qualities[i];
+        if (!q.isMuxed && (q.audioUrl == null || q.audioUrl!.isEmpty)) {
+          qualities[i] = q.copyWith(audioUrl: bestAudioUrl);
+        }
+      }
+    }
+
+    // 5. Fallback: ANDROID_TESTSUITE if qualities is still empty
     if (qualities.isEmpty) {
       try {
         final res = await _dio.post(
@@ -1066,7 +1243,7 @@ class YouTubeService {
               'client': {
                 'clientName': 'ANDROID_TESTSUITE',
                 'clientVersion': '1.9',
-                'androidSdkVersion': 34,
+                'androidSdkVersion': 32,
                 'hl': 'en',
                 'gl': 'US',
               },
@@ -1077,12 +1254,7 @@ class YouTubeService {
           res.data,
           userAgent: _androidTestUserAgent,
           qualities: qualities,
-          onMetadata: (t, c, v, d) {
-            if (t.isNotEmpty) resolvedTitle = t;
-            if (c.isNotEmpty) resolvedChannel = c;
-            if (v.isNotEmpty) resolvedViews = v;
-            if (d.isNotEmpty) resolvedDesc = d;
-          },
+          onMetadata: absorbMeta,
           onBestAudio: (url) {
             if (bestAudioUrl == null && url.isNotEmpty) {
               bestAudioUrl = url;
@@ -1101,13 +1273,6 @@ class YouTubeService {
       return b.bitrate.compareTo(a.bitrate);
     });
 
-    // ── 3. Fetch Up Next / More Videos (via `youtubei/v1/next` + account/search supplement) ──
-    final related = await _fetchUpNextVideos(
-      videoId: video.videoId,
-      channelName: resolvedChannel,
-      title: resolvedTitle,
-    );
-
     return YouTubeResolvedVideo(
       videoId: video.videoId,
       title: resolvedTitle,
@@ -1117,8 +1282,235 @@ class YouTubeService {
       qualities: qualities,
       bestAudioUrl: bestAudioUrl,
       audioUserAgent: audioUa,
-      relatedVideos: related,
+      relatedVideos: const [],
     );
+  }
+
+  /// Fetches `More videos` (Watch Next) AND real YouTube `Comments` in parallel
+  /// without blocking video stream startup!
+  Future<YouTubeWatchNextData> fetchWatchNextAndComments({
+    required String videoId,
+    required String channelName,
+    required String title,
+  }) async {
+    final related = <YouTubeVideoItem>[];
+    final seenIds = <String>{videoId};
+    final comments = <YouTubeCommentItem>[];
+    String commentCountText = '';
+    String? commentContinuationToken;
+
+    // 1. Query YouTube InnerTube `next` endpoint for Watch Next + comment continuation token
+    try {
+      final res = await _dio.post(
+        '$_ytOrigin/youtubei/v1/next?prettyPrint=false',
+        options: Options(headers: _buildWebHeaders(includeAuth: true)),
+        data: {
+          'videoId': videoId,
+          'context': {
+            'client': {
+              'clientName': 'WEB',
+              'clientVersion': '2.20250220.01.00',
+              'hl': 'en',
+              'gl': 'US',
+            },
+          },
+        },
+      );
+      final dynamic data =
+          res.data is String ? jsonDecode(res.data as String) : res.data;
+      if (data is Map) {
+        _extractVideoRenderers(data, related, seenIds, maxCount: 20);
+        commentContinuationToken = _findCommentContinuationToken(data);
+        commentCountText = _findCommentCountText(data);
+      }
+    } catch (_) {}
+
+    // 2. Fetch real comments using the continuation token AND supplement related videos if needed
+    await Future.wait([
+      if (commentContinuationToken != null && commentContinuationToken.isNotEmpty)
+        () async {
+          try {
+            final cRes = await _dio.post(
+              '$_ytOrigin/youtubei/v1/next?prettyPrint=false',
+              options: Options(headers: _buildWebHeaders(includeAuth: true)),
+              data: {
+                'continuation': commentContinuationToken,
+                'context': {
+                  'client': {
+                    'clientName': 'WEB',
+                    'clientVersion': '2.20250220.01.00',
+                    'hl': 'en',
+                    'gl': 'US',
+                  },
+                },
+              },
+            );
+            final dynamic cData =
+                cRes.data is String ? jsonDecode(cRes.data as String) : cRes.data;
+            if (cData is Map) {
+              _extractComments(cData, comments);
+            }
+          } catch (_) {}
+        }(),
+      if (related.length < 6)
+        () async {
+          try {
+            final cleanWords = title
+                .replaceAll(RegExp(r'[^\w\s]'), ' ')
+                .split(RegExp(r'\s+'))
+                .where((w) => w.length > 2)
+                .take(4)
+                .join(' ');
+            final searched = await searchVideos('$channelName $cleanWords');
+            for (final item in searched) {
+              if (seenIds.add(item.videoId)) {
+                related.add(item);
+                if (related.length >= 16) break;
+              }
+            }
+          } catch (_) {}
+        }(),
+    ]);
+
+    return YouTubeWatchNextData(
+      relatedVideos: related,
+      comments: comments,
+      commentCountText:
+          commentCountText.isNotEmpty ? commentCountText : (comments.isNotEmpty ? '${comments.length}+' : ''),
+    );
+  }
+
+  String? _findCommentContinuationToken(dynamic node) {
+    if (node is Map) {
+      // Check engagementPanelSectionListRenderer for comments panel
+      if (node['panelIdentifier'] == 'engagement-panel-comments-section' ||
+          node['targetId'] == 'engagement-panel-comments-section' ||
+          node['sectionIdentifier'] == 'comment-item-section') {
+        final tok = _findFirstToken(node);
+        if (tok != null && tok.isNotEmpty) return tok;
+      }
+      for (final v in node.values) {
+        final found = _findCommentContinuationToken(v);
+        if (found != null && found.isNotEmpty) return found;
+      }
+    } else if (node is List) {
+      for (final e in node) {
+        final found = _findCommentContinuationToken(e);
+        if (found != null && found.isNotEmpty) return found;
+      }
+    }
+    return null;
+  }
+
+  String? _findFirstToken(dynamic node) {
+    if (node is Map) {
+      final t1 = node['continuationEndpoint']?['continuationCommand']?['token']?.toString();
+      if (t1 != null && t1.isNotEmpty) return t1;
+      final t2 = node['reloadContinuationItemsCommand']?['token']?.toString();
+      if (t2 != null && t2.isNotEmpty) return t2;
+      final t3 = node['nextContinuationData']?['continuation']?.toString();
+      if (t3 != null && t3.isNotEmpty) return t3;
+      for (final v in node.values) {
+        final f = _findFirstToken(v);
+        if (f != null && f.isNotEmpty) return f;
+      }
+    } else if (node is List) {
+      for (final e in node) {
+        final f = _findFirstToken(e);
+        if (f != null && f.isNotEmpty) return f;
+      }
+    }
+    return null;
+  }
+
+  String _findCommentCountText(dynamic node) {
+    if (node is Map) {
+      if (node.containsKey('commentsEntryPointHeaderRenderer')) {
+        final r = node['commentsEntryPointHeaderRenderer'];
+        if (r is Map) {
+          final c = _extractText(r['commentCount']);
+          if (c.isNotEmpty) return c;
+        }
+      }
+      if (node.containsKey('ContextualInfo')) {
+        final c = _extractText(node['ContextualInfo']);
+        if (c.isNotEmpty) return c;
+      }
+      for (final v in node.values) {
+        final f = _findCommentCountText(v);
+        if (f.isNotEmpty) return f;
+      }
+    } else if (node is List) {
+      for (final e in node) {
+        final f = _findCommentCountText(e);
+        if (f.isNotEmpty) return f;
+      }
+    }
+    return '';
+  }
+
+  void _extractComments(dynamic node, List<YouTubeCommentItem> out) {
+    if (out.length >= 40) return;
+    if (node is Map) {
+      // 1. 2025/2026 YouTube commentEntityPayload
+      if (node.containsKey('commentEntityPayload') &&
+          node['commentEntityPayload'] is Map) {
+        final p = node['commentEntityPayload'] as Map;
+        final text = p['properties']?['content']?['content']?.toString() ?? '';
+        final author = p['author']?['displayName']?.toString() ?? 'YouTube User';
+        final avatar = p['author']?['avatarThumbnailUrl']?.toString();
+        final time = p['properties']?['publishedTime']?.toString() ?? '';
+        final likes = p['toolbar']?['likeCountNotliked']?.toString() ??
+            p['toolbar']?['likeCountLiked']?.toString() ??
+            '';
+        final replies = p['toolbar']?['replyCount']?.toString() ?? '';
+        if (text.trim().isNotEmpty) {
+          out.add(
+            YouTubeCommentItem(
+              authorName: author,
+              authorAvatarUrl: avatar,
+              text: text.trim(),
+              publishedTime: time,
+              likeCount: likes.trim(),
+              replyCount: replies.trim(),
+            ),
+          );
+        }
+      } else if (node.containsKey('commentRenderer') &&
+          node['commentRenderer'] is Map) {
+        // 2. Classic commentRenderer
+        final r = node['commentRenderer'] as Map;
+        final text = _extractText(r['contentText']);
+        final author = _extractText(r['authorText']);
+        final time = _extractText(r['publishedTimeText']);
+        final likes = _extractText(r['voteCount']);
+        final thumbs = r['authorThumbnail']?['thumbnails'] as List?;
+        final avatar = (thumbs != null && thumbs.isNotEmpty)
+            ? thumbs.last['url']?.toString()
+            : null;
+        if (text.trim().isNotEmpty) {
+          out.add(
+            YouTubeCommentItem(
+              authorName: author.isNotEmpty ? author : 'YouTube User',
+              authorAvatarUrl: avatar,
+              text: text.trim(),
+              publishedTime: time,
+              likeCount: likes.trim(),
+            ),
+          );
+        }
+      } else {
+        for (final v in node.values) {
+          _extractComments(v, out);
+          if (out.length >= 40) break;
+        }
+      }
+    } else if (node is List) {
+      for (final e in node) {
+        _extractComments(e, out);
+        if (out.length >= 40) break;
+      }
+    }
   }
 
   Future<List<YouTubeVideoItem>> _fetchNextRecommendationsOnly(String videoId) async {
@@ -1146,44 +1538,6 @@ class YouTubeService {
         _extractVideoRenderers(data, related, seenIds, maxCount: 20);
       }
     } catch (_) {}
-    return related;
-  }
-
-  Future<List<YouTubeVideoItem>> _fetchUpNextVideos({
-    required String videoId,
-    required String channelName,
-    required String title,
-  }) async {
-    final related = <YouTubeVideoItem>[];
-    final seenIds = <String>{videoId};
-
-    // A. Query YouTube InnerTube `next` endpoint for official Watch Next recommendations (supports lockupViewModel!)
-    final nextItems = await _fetchNextRecommendationsOnly(videoId);
-    for (final item in nextItems) {
-      if (seenIds.add(item.videoId)) {
-        related.add(item);
-      }
-    }
-
-    // B. Supplement with search results for the channel/title so More videos is always rich
-    if (related.length < 6) {
-      try {
-        final cleanWords = title
-            .replaceAll(RegExp(r'[^\w\s]'), ' ')
-            .split(RegExp(r'\s+'))
-            .where((w) => w.length > 2)
-            .take(4)
-            .join(' ');
-        final searched = await searchVideos('$channelName $cleanWords');
-        for (final item in searched) {
-          if (seenIds.add(item.videoId)) {
-            related.add(item);
-            if (related.length >= 16) break;
-          }
-        }
-      } catch (_) {}
-    }
-
     return related;
   }
 
@@ -1264,7 +1618,7 @@ class YouTubeService {
     }
 
     // 3. Extract All Adaptive Video Resolutions from 144p up to 2160p (4K) & 4320p (8K)
-    if (adaptive is List && clientBestAudio != null) {
+    if (adaptive is List) {
       final bestByHeight = <int, YouTubeQualityStream>{};
       for (final f in adaptive) {
         if (f is! Map) continue;
@@ -1280,6 +1634,7 @@ class YouTubeService {
         final codecName = mime.contains('vp9')
             ? 'VP9'
             : (mime.contains('av01') ? 'AV1' : (isMp4 ? 'AVC1' : 'VP9'));
+        final clen = int.tryParse(f['contentLength']?.toString() ?? '0') ?? 0;
 
         final candidate = YouTubeQualityStream(
           label: _formatQualityLabel(height, fps, isMuxed: false),
@@ -1293,6 +1648,8 @@ class YouTubeService {
           audioUrl: clientBestAudio,
           isMuxed: false,
           userAgent: userAgent,
+          contentLength: clen,
+          mimeType: mime,
         );
 
         final existing = bestByHeight[height];
@@ -1308,7 +1665,7 @@ class YouTubeService {
       }
     }
 
-    // 4. HLS Manifest URL if available
+    // 4. HLS Manifest URL (from IOS client — has built-in audio+video up to 1080p/4K!)
     final hlsUrl = streamingData['hlsManifestUrl']?.toString();
     if (hlsUrl != null && hlsUrl.isNotEmpty && !qualities.any((q) => q.isHls)) {
       qualities.add(

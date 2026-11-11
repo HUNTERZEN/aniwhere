@@ -486,9 +486,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => TrackerStatusSheet(title: title),
     );
   }

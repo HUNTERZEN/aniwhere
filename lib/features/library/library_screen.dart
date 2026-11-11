@@ -1,11 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/router/app_router.dart';
 import '../../core/utils/providers.dart';
+import '../../core/widgets/glass_widgets.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/app_settings.dart';
 import '../../data/models/music_models.dart';
@@ -192,6 +193,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void _showFilterSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => const _FilterSheet(),
     );
@@ -519,6 +522,9 @@ class _LibraryGridItem extends ConsumerWidget {
   void _showEntryActions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => _EntryActionSheet(entry: entry),
     );
   }
@@ -800,6 +806,9 @@ class _LibraryListItem extends ConsumerWidget {
   void _showEntryActions(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => _EntryActionSheet(entry: entry),
     );
   }
@@ -813,6 +822,7 @@ class _FilterSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sortMode = ref.watch(librarySortModeProvider);
     final statusFilter = ref.watch(libraryStatusFilterProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -820,22 +830,39 @@ class _FilterSheet extends ConsumerWidget {
       maxChildSize: 0.85,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: ListView(
-            controller: scrollController,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[600],
-                    borderRadius: BorderRadius.circular(2),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.65)
+                    : Colors.white.withValues(alpha: 0.82),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.08),
                   ),
                 ),
               ),
+              padding: const EdgeInsets.all(16),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white30 : Colors.black26,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
               const SizedBox(height: 16),
               
               // Status Filter Section
@@ -916,9 +943,11 @@ class _FilterSheet extends ConsumerWidget {
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
+  },
+);
   }
 
   String _getStatusLabel(MediaStatus status) {
@@ -1030,81 +1059,99 @@ class _EntryActionSheetState extends ConsumerState<_EntryActionSheet> {
   @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
-    
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(2),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.65)
+                : Colors.white.withValues(alpha: 0.82),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.08),
               ),
             ),
-            const SizedBox(height: 16),
-            
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                entry.title,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top drag handle
+                Container(
+                  width: 42,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white30 : Colors.black26,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    entry.title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FrostedGlassPillOption(
+                  icon: Icons.flag_rounded,
+                  title: 'Change Status',
+                  subtitle: _getStatusLabel(entry.status),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showStatusPicker(context, ref);
+                  },
+                ),
+                FrostedGlassPillOption(
+                  icon: Icons.done_all_rounded,
+                  title: 'Mark All as Read',
+                  subtitle: 'Mark all chapters as completed',
+                  onTap: () async {
+                    final repo = ref.read(libraryRepositoryProvider);
+                    final updatedEntry = entry
+                      ..currentProgress = entry.totalCount ?? entry.currentProgress
+                      ..status = MediaStatus.completed;
+                    await repo.updateEntry(updatedEntry);
+                    ref.invalidate(libraryEntriesProvider);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                FrostedGlassPillOption(
+                  icon: Icons.auto_stories_rounded,
+                  title: 'Reading Progress',
+                  subtitle: _isLoadingProgress
+                      ? 'Loading chapters...'
+                      : '$_readChapters of $_totalChapters chapters read',
+                  onTap: () {},
+                ),
+                FrostedGlassPillOption(
+                  icon: Icons.delete_outline_rounded,
+                  isDestructive: true,
+                  title: 'Remove from Favorites',
+                  subtitle: 'Removes entry from library',
+                  onTap: () => _confirmRemove(context, ref),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            
-            // Status change
-            ListTile(
-              leading: const Icon(Icons.flag),
-              title: const Text('Change Status'),
-              subtitle: Text(_getStatusLabel(entry.status)),
-              onTap: () {
-                Navigator.pop(context);
-                _showStatusPicker(context, ref);
-              },
-            ),
-            
-            // Remove from Library (was "Remove from Favorites")
-            ListTile(
-              leading: const Icon(Icons.favorite, color: AppColors.error),
-              title: const Text('Remove from Favorites'),
-              subtitle: const Text('Removes from library'),
-              onTap: () => _confirmRemove(context, ref),
-            ),
-            
-            // Mark all as read
-            ListTile(
-              leading: const Icon(Icons.done_all),
-              title: const Text('Mark All as Read'),
-              onTap: () async {
-                final repo = ref.read(libraryRepositoryProvider);
-                final updatedEntry = entry
-                  ..currentProgress = entry.totalCount ?? entry.currentProgress
-                  ..status = MediaStatus.completed;
-                await repo.updateEntry(updatedEntry);
-                ref.invalidate(libraryEntriesProvider);
-                if (context.mounted) Navigator.pop(context);
-              },
-            ),
-            
-            // View progress (read-only, synced with actual reading)
-            ListTile(
-              leading: const Icon(Icons.auto_stories),
-              title: const Text('Reading Progress'),
-              subtitle: _isLoadingProgress 
-                  ? const Text('Loading...')
-                  : Text('$_readChapters/$_totalChapters chapters read'),
-              enabled: false,  // Read-only display
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1130,47 +1177,34 @@ class _EntryActionSheetState extends ConsumerState<_EntryActionSheet> {
   }
 
   void _showStatusPicker(BuildContext context, WidgetRef ref) {
-    showDialog(
+    showFrostedGlassSheet(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Change Status'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: MediaStatus.values.map((status) {
-              return RadioListTile<MediaStatus>(
-                title: Text(_getStatusLabel(status)),
-                value: status,
-                groupValue: widget.entry.status,
-                onChanged: (value) async {
-                  if (value != null) {
-                    final repo = ref.read(libraryRepositoryProvider);
-                    widget.entry.status = value;
-                    await repo.updateEntry(widget.entry);
-                    ref.invalidate(libraryEntriesProvider);
-                    
-                    if (dialogContext.mounted) {
-                      Navigator.of(dialogContext).pop();
-                    }
-                    
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Status changed to ${_getStatusLabel(value)}')),
-                      );
-                    }
-                  }
-                },
+      title: 'Change Status',
+      children: MediaStatus.values.map((status) {
+        final isSelected = widget.entry.status == status;
+        return FrostedGlassPillOption(
+          icon: isSelected
+              ? Icons.check_circle_rounded
+              : Icons.radio_button_unchecked_rounded,
+          title: _getStatusLabel(status),
+          isSelected: isSelected,
+          onTap: () async {
+            final repo = ref.read(libraryRepositoryProvider);
+            widget.entry.status = status;
+            await repo.updateEntry(widget.entry);
+            ref.invalidate(libraryEntriesProvider);
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Status changed to ${_getStatusLabel(status)}'),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
+            }
+          },
+        );
+      }).toList(),
     );
   }
 

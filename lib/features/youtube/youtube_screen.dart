@@ -13,6 +13,7 @@ import '../auth/auth_service.dart';
 import '../auth/sign_in_screen.dart';
 import '../music/music_providers.dart';
 import 'youtube_service.dart';
+import 'youtube_stream_proxy.dart';
 
 // ============================================================================
 // Global YouTube State Providers
@@ -1192,6 +1193,7 @@ class _YouTubeDraggablePlayerOverlayState
 
   YouTubeVideoItem? _loadedVideo;
   YouTubeResolvedVideo? _resolvedData;
+  YouTubeWatchNextData? _watchNextData;
   YouTubeQualityStream? _selectedQuality;
 
   bool _isResolving = false;
@@ -1291,6 +1293,7 @@ class _YouTubeDraggablePlayerOverlayState
       _isResolving = true;
       _hasError = false;
       _resolvedData = null;
+      _watchNextData = null;
       _selectedQuality = null;
       _position = Duration.zero;
       _duration = Duration(seconds: video.estimatedDurationSeconds);
@@ -1299,6 +1302,18 @@ class _YouTubeDraggablePlayerOverlayState
     await _videoPlayer?.stop();
 
     final service = ref.read(youtubeServiceProvider);
+
+    // Fetch comments and recommendations in background without delaying video start
+    service.fetchWatchNextAndComments(
+      videoId: video.videoId,
+      channelName: video.channelName,
+      title: video.title,
+    ).then((data) {
+      if (mounted && _loadedVideo?.videoId == video.videoId) {
+        setState(() => _watchNextData = data);
+      }
+    });
+
     final resolved = await service.resolveVideo(video);
     if (!mounted || _loadedVideo?.videoId != video.videoId) return;
 
@@ -1341,26 +1356,35 @@ class _YouTubeDraggablePlayerOverlayState
         _hasError = false;
       });
 
-      final platform = _videoPlayer!.platform as dynamic;
-      try {
-        if (!stream.isMuxed &&
-            stream.audioUrl != null &&
-            stream.audioUrl!.isNotEmpty) {
-          await platform.setProperty('audio-files', stream.audioUrl!);
-        } else {
-          await platform.setProperty('audio-files', '');
-        }
-      } catch (_) {}
+      String playUrl = stream.videoUrl;
+      // Route through local chunking proxy for iOS/adaptive streams to avoid HTTP 403 Forbidden
+      if (!stream.isMuxed) {
+        playUrl = await YouTubeStreamProxy().getProxyUrl(
+          remoteUrl: stream.videoUrl,
+          userAgent: stream.userAgent,
+          totalLength: stream.contentLength,
+          mimeType: stream.mimeType,
+        );
+      }
 
       await _videoPlayer!.open(
         Media(
-          stream.videoUrl,
+          playUrl,
           httpHeaders: {
             'User-Agent': stream.userAgent,
           },
         ),
         play: true,
       );
+
+      // Bind audio track for adaptive streams (1080p, 1440p 2K, 2160p 4K)
+      if (!stream.isMuxed &&
+          stream.audioUrl != null &&
+          stream.audioUrl!.isNotEmpty) {
+        await _videoPlayer!.setAudioTrack(AudioTrack.uri(stream.audioUrl!));
+      } else {
+        await _videoPlayer!.setAudioTrack(AudioTrack.auto());
+      }
 
       await _videoPlayer!.setRate(_playbackSpeed);
 
@@ -1624,6 +1648,32 @@ class _YouTubeDraggablePlayerOverlayState
           },
         );
       }).toList(),
+    );
+  }
+
+  void _showCommentsSheet(BuildContext context) {
+    final comments = _watchNextData?.comments ?? [];
+    final countText = _watchNextData?.commentCountText.isNotEmpty == true
+        ? _watchNextData!.commentCountText
+        : (comments.isNotEmpty ? '${comments.length}' : '');
+
+    showFrostedGlassBottomSheet(
+      context: context,
+      title: countText.isNotEmpty ? 'Comments · $countText' : 'Comments',
+      children: [
+        if (comments.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(
+              child: Text(
+                'Loading or no comments available for this video.',
+                style: TextStyle(color: Colors.white70, fontSize: 13.5),
+              ),
+            ),
+          )
+        else
+          ...comments.map((c) => _CommentTile(comment: c)),
+      ],
     );
   }
 
@@ -2382,67 +2432,110 @@ class _YouTubeDraggablePlayerOverlayState
 
         const SizedBox(height: 14),
 
-        // 4. Comments Preview Card matching Screenshot 1
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Text(
-                    'Comments',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Top',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+        // 4. Comments Preview Card (interactive, opens full real comments sheet)
+        GestureDetector(
+          onTap: () => _showCommentsSheet(context),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.10),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: const Color(0xFF2A5C4D),
-                    child: Text(
-                      channel.isNotEmpty ? channel[0].toUpperCase() : 'U',
-                      style: const TextStyle(
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Comments',
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Watching "$title" in ad-free HD/4K quality on $channel.',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 6),
+                    Text(
+                      _watchNextData?.commentCountText.isNotEmpty == true
+                          ? _watchNextData!.commentCountText
+                          : 'Top',
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Colors.white54,
                         fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const Spacer(),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.white54,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (_watchNextData != null &&
+                        _watchNextData!.comments.isNotEmpty &&
+                        _watchNextData!.comments.first.authorAvatarUrl != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: _watchNextData!.comments.first.authorAvatarUrl!,
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => CircleAvatar(
+                            radius: 12,
+                            backgroundColor: const Color(0xFF2A5C4D),
+                            child: Text(
+                              _watchNextData!.comments.first.authorName.isNotEmpty
+                                  ? _watchNextData!.comments.first.authorName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: const Color(0xFF2A5C4D),
+                        child: Text(
+                          channel.isNotEmpty ? channel[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        (_watchNextData != null && _watchNextData!.comments.isNotEmpty)
+                            ? _watchNextData!.comments.first.text
+                            : 'Tap to view all comments on this video...',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -2654,6 +2747,121 @@ class _MoreVideosHorizontalRow extends StatelessWidget {
               onPressed: onMoreTap,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Rich Frosted Glass Comment Tile displaying real YouTube user comments
+class _CommentTile extends StatelessWidget {
+  final YouTubeCommentItem comment;
+
+  const _CommentTile({required this.comment});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CachedNetworkImage(
+                    imageUrl: comment.authorAvatarUrl!,
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => _avatarFallback(),
+                  ),
+                )
+              else
+                _avatarFallback(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  comment.authorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (comment.publishedTime.isNotEmpty)
+                Text(
+                  comment.publishedTime,
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    fontSize: 11.5,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            comment.text,
+            style: TextStyle(
+              color: isDark ? Colors.white.withValues(alpha: 0.90) : Colors.black87,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          if (comment.likeCount.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.thumb_up_alt_rounded,
+                  size: 13,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  comment.likeCount,
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.black54,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _avatarFallback() {
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: const Color(0xFF2A5C4D),
+      child: Text(
+        comment.authorName.isNotEmpty ? comment.authorName[0].toUpperCase() : 'U',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
