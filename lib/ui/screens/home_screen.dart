@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../features/music/mini_player.dart';
 import '../../features/music/music_providers.dart';
+import '../../features/youtube/youtube_screen.dart';
 
 /// Main screen with iOS 27 Fluid Optical Liquid Glass navigation bar
 /// and unclipped magnifying droplet lens on left/right pull.
@@ -28,6 +29,20 @@ class HomeScreen extends ConsumerWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final playerState = ref.watch(musicPlayerProvider);
     final isBarVisible = ref.watch(isBottomBarVisibleProvider);
+    final activeYtVideo = ref.watch(activeYouTubeVideoProvider);
+    final ytExpandProgress = ref.watch(ytExpandProgressProvider);
+
+    // Automatically close the YouTube overlay when a Music track starts playing
+    ref.listen(musicPlayerProvider, (prev, next) {
+      final startedNewTrack = next.currentTrack != null &&
+          (next.isPlaying || next.isLoading) &&
+          (prev?.currentTrack?.id != next.currentTrack?.id ||
+              (!(prev?.isPlaying ?? false) && next.isPlaying));
+      if (startedNewTrack && ref.read(activeYouTubeVideoProvider) != null) {
+        ref.read(activeYouTubeVideoProvider.notifier).state = null;
+        ref.read(ytExpandProgressProvider.notifier).state = 0.0;
+      }
+    });
 
     final navBottomMargin = bottomPadding > 0 ? bottomPadding : 16.0;
     final miniPlayerBottom = navBottomMargin + _navBarHeight + 12.0;
@@ -39,8 +54,8 @@ class HomeScreen extends ConsumerWidget {
         children: [
           child,
 
-          // Floating Mini Player stays cleanly above the 5-tab Liquid Glass bar (never overlaps on scroll)
-          if (playerState.hasTrack)
+          // Floating Music Mini Player stays cleanly above the 5-tab Liquid Glass bar
+          if (playerState.hasTrack && activeYtVideo == null)
             Positioned(
               left: 0,
               right: 0,
@@ -56,18 +71,23 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
 
+          // Persistent Draggable YouTube Player & MiniPlayer (drag down -> miniplayer, swipe up -> full player)
+          YouTubeDraggablePlayerOverlay(
+            bottomNavOffset: miniPlayerBottom,
+          ),
+
           // Bottom Liquid Glass Navigation Bar placed directly in Stack (no Opacity layer)
-          // so BackdropFilter and RawMagnifier sample the live background directly.
+          // Slides down smoothly as the YouTube player expands to fullscreen, and glides back up as it minimizes!
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: -(navBottomMargin + _navBarHeight + 24.0) * ytExpandProgress,
             child: AnimatedSlide(
               duration: const Duration(milliseconds: 380),
               curve: Curves.easeOutCubic,
               offset: isBarVisible ? Offset.zero : const Offset(0, 1.6),
               child: IgnorePointer(
-                ignoring: !isBarVisible,
+                ignoring: !isBarVisible || ytExpandProgress > 0.4,
                 child: _LiquidGlassNavBar(
                   selectedIndex: selectedIndex,
                   isDark: isDark,
@@ -83,10 +103,10 @@ class HomeScreen extends ConsumerWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location == AppRouter.music) return 0;
-    if (location == AppRouter.search) return 1;
+    if (location == AppRouter.home) return 0;
+    if (location == AppRouter.music) return 1;
     if (location == AppRouter.browse) return 2;
-    if (location == AppRouter.home || location == AppRouter.library) return 3;
+    if (location == AppRouter.library) return 3;
     if (location == AppRouter.settings) return 4;
     return 0;
   }
@@ -101,16 +121,16 @@ class HomeScreen extends ConsumerWidget {
 
     switch (index) {
       case 0:
-        context.go(AppRouter.music);
+        context.go(AppRouter.home);
         break;
       case 1:
-        context.go(AppRouter.search);
+        context.go(AppRouter.music);
         break;
       case 2:
         context.go(AppRouter.browse);
         break;
       case 3:
-        context.go(AppRouter.home);
+        context.go(AppRouter.library);
         break;
       case 4:
         context.go(AppRouter.settings);
@@ -373,7 +393,7 @@ class _LiquidGlassNavBarState extends ConsumerState<_LiquidGlassNavBar>
 
     const tabs = [
       _TabSpec(Icons.home_outlined, Icons.home_rounded, 'Home'),
-      _TabSpec(Icons.search_outlined, Icons.search_rounded, 'Search'),
+      _TabSpec(Icons.music_note_outlined, Icons.music_note_rounded, 'Music'),
       _TabSpec(Icons.auto_stories_outlined, Icons.auto_stories_rounded, 'Manga'),
       _TabSpec(Icons.video_library_outlined, Icons.video_library_rounded, 'Library'),
       _TabSpec(Icons.settings_outlined, Icons.settings_rounded, 'Settings'),

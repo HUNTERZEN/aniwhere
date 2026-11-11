@@ -31,9 +31,16 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.black.withValues(alpha: opacity.clamp(0.88, 0.98))
-                : Colors.white.withValues(alpha: opacity),
+                ? Colors.black.withValues(alpha: opacity.clamp(0.58, 0.72))
+                : Colors.white.withValues(alpha: opacity.clamp(0.78, 0.88)),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.08),
+              ),
+            ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: SafeArea(
@@ -64,7 +71,7 @@ void showTrackOptionsSheet(BuildContext context, WidgetRef ref, MusicTrack track
                                 width: 52,
                                 height: 52,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => _artFallback(isDark),
+                                errorWidget: (_, _, _) => _artFallback(isDark),
                               )
                             : _artFallback(isDark),
                       ),
@@ -239,13 +246,26 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
       builder: (context, ref, _) {
         final playlists = ref.watch(userPlaylistsProvider);
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.black : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: SafeArea(
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.64)
+                    : Colors.white.withValues(alpha: 0.84),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.08),
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +338,7 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
                                   width: 44,
                                   height: 44,
                                   fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => _artFallback(isDark),
+                                  errorWidget: (_, _, _) => _artFallback(isDark),
                                 )
                               : _artFallback(isDark),
                         ),
@@ -353,7 +373,9 @@ void showAddToPlaylistSheet(BuildContext context, WidgetRef ref, MusicTrack trac
               ],
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
     ),
   );
@@ -436,79 +458,110 @@ void showQualitySheet(BuildContext context, WidgetRef ref) {
     context: context,
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.black : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4.5,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black26,
-                  borderRadius: BorderRadius.circular(2.5),
-                ),
+    builder: (ctx) => ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.64)
+                : Colors.white.withValues(alpha: 0.84),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.08),
               ),
             ),
-            const Text(
-              'Streaming Audio Quality',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            ...AudioQuality.values.map((q) {
-              final isSelected = q == current;
-              String label;
-              String sub;
-              switch (q) {
-                case AudioQuality.lossless:
-                  label = 'Lossless (Hi-Res)';
-                  sub = 'FLAC / 320 kbps CD quality';
-                  break;
-                case AudioQuality.high:
-                  label = 'High Quality';
-                  sub = 'AAC 160 kbps';
-                  break;
-                case AudioQuality.medium:
-                  label = 'Standard Data Saver';
-                  sub = 'Opus 96 kbps';
-                  break;
-                case AudioQuality.low:
-                  label = 'Low / Data Saver';
-                  sub = 'Opus 48 kbps';
-                  break;
-              }
+          ),
+          padding: const EdgeInsets.all(20),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4.5,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black26,
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Streaming Audio Quality',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
+                const SizedBox(height: 12),
+                ...AudioQuality.values.map((q) {
+                  final isSelected = q == current;
+                  String label;
+                  String sub;
+                  switch (q) {
+                    case AudioQuality.lossless:
+                      label = 'Lossless (Hi-Res)';
+                      sub = 'FLAC / 320 kbps CD quality';
+                      break;
+                    case AudioQuality.high:
+                      label = 'High Quality';
+                      sub = 'AAC 160 kbps';
+                      break;
+                    case AudioQuality.medium:
+                      label = 'Standard Data Saver';
+                      sub = 'Opus 96 kbps';
+                      break;
+                    case AudioQuality.low:
+                      label = 'Low / Data Saver';
+                      sub = 'Opus 48 kbps';
+                      break;
+                  }
 
-              return ListTile(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                selected: isSelected,
-                selectedTileColor: AppColors.accent.withValues(alpha: 0.15),
-                title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(sub, style: const TextStyle(fontSize: 12)),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppColors.accent)
-                    : null,
-                onTap: () {
-                  ref.read(audioQualityWifiProvider.notifier).state = q;
-                  ref.read(audioQualityCellularProvider.notifier).state = q;
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Audio quality updated to $label'),
-                      behavior: SnackBarBehavior.floating,
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.accent.withValues(alpha: 0.16)
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.07)
+                              : Colors.black.withValues(alpha: 0.05)),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.accent.withValues(alpha: 0.45)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.09)
+                                : Colors.black.withValues(alpha: 0.07)),
+                      ),
+                    ),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Text(sub, style: const TextStyle(fontSize: 12)),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded, color: AppColors.accent)
+                          : null,
+                      onTap: () {
+                        ref.read(audioQualityWifiProvider.notifier).state = q;
+                        ref.read(audioQualityCellularProvider.notifier).state = q;
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Audio quality updated to $label'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
                     ),
                   );
-                },
-              );
-            }),
-          ],
+                }),
+              ],
+            ),
+          ),
         ),
       ),
     ),
@@ -649,13 +702,26 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
           orElse: () => playlist,
         );
 
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            color: isDark ? Colors.black : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: SafeArea(
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.68)
+                    : Colors.white.withValues(alpha: 0.86),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.08),
+                  ),
+                ),
+              ),
+              child: SafeArea(
             child: Column(
               children: [
                 Center(
@@ -683,7 +749,7 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => _artFallback(isDark, size: 80),
+                                errorWidget: (_, _, _) => _artFallback(isDark, size: 80),
                               )
                             : _artFallback(isDark, size: 80),
                       ),
@@ -831,7 +897,7 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
                                         width: 44,
                                         height: 44,
                                         fit: BoxFit.cover,
-                                        errorWidget: (_, __, ___) => _artFallback(isDark),
+                                        errorWidget: (_, _, _) => _artFallback(isDark),
                                       )
                                     : _artFallback(isDark),
                               ),
@@ -882,7 +948,9 @@ void showPlaylistDetailSheet(BuildContext context, WidgetRef ref, MusicPlaylist 
               ],
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
     ),
   );
@@ -918,35 +986,71 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveColor = iconColor ?? const Color(0xFFB39DDB);
 
-    return ListTile(
-      leading: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: (iconColor ?? AppColors.primary).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: iconColor ?? AppColors.primary, size: 22),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14.5,
-          color: isDark ? Colors.white : Colors.black87,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? Colors.white54 : Colors.black54,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.09)
+                    : Colors.black.withValues(alpha: 0.07),
+                width: 0.9,
               ),
-            )
-          : null,
-      onTap: onTap,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: effectiveColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: effectiveColor, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -982,9 +1086,16 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withValues(alpha: opacity.clamp(0.88, 0.98))
-                    : Colors.white.withValues(alpha: opacity),
+                    ? Colors.black.withValues(alpha: opacity.clamp(0.58, 0.72))
+                    : Colors.white.withValues(alpha: opacity.clamp(0.78, 0.88)),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.08),
+                  ),
+                ),
               ),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: SafeArea(
@@ -1015,7 +1126,7 @@ void showDownloadMusicQualitySheet(BuildContext context, WidgetRef ref, MusicTra
                                     width: 50,
                                     height: 50,
                                     fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) => _artFallback(isDark),
+                                    errorWidget: (_, _, _) => _artFallback(isDark),
                                   )
                                 : _artFallback(isDark),
                           ),

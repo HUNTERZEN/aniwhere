@@ -668,16 +668,31 @@ class MusicService {
     String videoId, {
     AudioQuality quality = AudioQuality.lossless,
   }) async {
+    const vrUa =
+        'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip';
     try {
       final res = await _ytDio.post(
         'https://www.youtube.com/youtubei/v1/player?prettyPrint=false',
+        options: Options(
+          headers: {
+            'User-Agent': vrUa,
+            'X-YouTube-Client-Name': '28',
+            'X-YouTube-Client-Version': '1.60.19',
+          },
+        ),
         data: {
           'videoId': videoId,
+          'contentCheckOk': true,
+          'racyCheckOk': true,
           'context': {
             'client': {
               'clientName': 'ANDROID_VR',
               'clientVersion': '1.60.19',
-              'androidSdkVersion': 34,
+              'deviceMake': 'Oculus',
+              'deviceModel': 'Quest 3',
+              'osName': 'Android',
+              'osVersion': '12L',
+              'androidSdkVersion': 32,
               'hl': 'en',
               'gl': 'US',
             },

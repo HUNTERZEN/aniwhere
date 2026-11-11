@@ -7,10 +7,10 @@ import '../../features/reader/reader_screen.dart';
 import '../../features/reader/reader_providers.dart';
 import '../../features/player/player_screen.dart';
 import '../../features/player/player_providers.dart';
-import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/tracker_settings_screen.dart';
 import '../../features/music/music_screen.dart';
+import '../../features/youtube/youtube_screen.dart';
 import '../../ui/screens/home_screen.dart';
 import '../../data/sources/source.dart';
 import '../../features/browse/source_browse_screen.dart';
@@ -31,7 +31,6 @@ class AppRouter {
   static const String library = '/library';
   static const String browse = '/browse';
   static const String music = '/music';
-  static const String search = '/search';
   static const String settings = '/settings';
   static const String trackerSettings = '/settings/trackers';
   static const String reader = '/reader/:id';
@@ -41,7 +40,7 @@ class AppRouter {
   // Router configuration
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: music,
+    initialLocation: home,
     debugLogDiagnostics: true,
     routes: [
       // Shell route for bottom navigation
@@ -51,9 +50,9 @@ class AppRouter {
         routes: [
           GoRoute(
             path: home,
-            name: 'library',
+            name: 'home',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: LibraryScreen(),
+              child: YouTubeScreen(),
             ),
           ),
           GoRoute(
@@ -71,10 +70,10 @@ class AppRouter {
             ),
           ),
           GoRoute(
-            path: search,
-            name: 'search',
+            path: library,
+            name: 'library',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: SearchScreen(),
+              child: LibraryScreen(),
             ),
           ),
           GoRoute(
